@@ -1,0 +1,22 @@
+# hidden / vim files
+.*
+*~
+\#*
+# Ninja files
+*.ninja
+
+# Visual Studio
+Debug
+Release
+*.vcxproj*
+*.sln
+*.dir
+*.suo
+
+# CMake stuff
+CMakeFiles
+Makefile
+CMakeCache.txt
+src/ProfileBuild.cmake
+cmake_install.cmake
+/src/config.h
