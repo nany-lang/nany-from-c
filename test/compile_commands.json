@@ -1,0 +1,7 @@
+[
+    {
+	"directory": "/home/nitrous/code/nany-from-c/test",
+	"command": "/usr/bin/gcc -Wall -Wextra -W -std=c99 -I. -DNDEBUG -DPOSIX -c -o glew.o glew.c",
+	"file": "glew.c"
+    }
+]
