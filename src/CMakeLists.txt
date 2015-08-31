@@ -25,7 +25,7 @@ if(NOT YUNI_CONFIG)
 	set(YUNI_CONFIG yuni-config)
 endif()
 nmessage("${YUNI_CONFIG}")
-set(YUNI_MODULES -m media -m opengl -m uuid -m devices -m display -m ui)
+set(YUNI_MODULES -m uuid)
 execute_process(COMMAND "${YUNI_CONFIG}" ${YUNI_MODULES} --cxxflags
 				OUTPUT_VARIABLE YUNI_CXXFLAGS
 				OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -35,19 +35,18 @@ execute_process(COMMAND "${YUNI_CONFIG}" ${YUNI_MODULES} --libs
 if ("${YUNI_CXXFLAGS}" STREQUAL "" OR "${YUNI_LIBS}" STREQUAL "")
 	nerror("yuni-config was not found ! Please install Yuni (or set -DYUNI_CONFIG to specify the yuni-config location).")
 endif()
-link_libraries("${YUNI_LIBS} ${LDFLAGS}")
 
 
 # Clang
 # -----
-set(CLANG_INCLUDES "-Iext -Iext/clang")
-set(CLANG_LDFLAGS "ext/lib/libclang.lib")
+#set(LIBCLANG_INCLUDES "-Iext -Iext/clang")
+#set(LIBCLANG_LIBS "ext/lib/libclang.lib")
 
+include("cmake/FindLibClang.cmake")
 
-
-set(LDFLAGS "-L. ${CLANG_LDFLAGS}")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${YUNI_CXXFLAGS} -Wall -Wextra -W -Wno-unused-parameter -DDEBUG ${INCLUDES} ${CLANG_INCLUDES}")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${YUNI_CXXFLAGS} -Wall -Wextra -W -Wno-unused-parameter -DNDEBUG ${INCLUDES} ${CLANG_INCLUDES}")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${YUNI_CXXFLAGS} -I. -Wall -Wextra -W -Wno-unused-parameter -DDEBUG -ggdb3 ${INCLUDES} -I${LIBCLANG_INCLUDES}")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${YUNI_CXXFLAGS} -I. -Wall -Wextra -W -Wno-unused-parameter -DNDEBUG -O3 ${INCLUDES} -I${LIBCLANG_INCLUDES}")
+link_libraries("${YUNI_LIBS} ${LIBCLANG_LDFLAGS}")
 
 
 
@@ -72,6 +71,8 @@ add_executable(nany-from-c
 	converter.h
 	parser/parser.cpp
 	parser/parser.h
+	writer/visitor.cpp
+	writer/visitor.h
 )
 
 target_link_libraries(nany-from-c "${YUNI_LIBS}")

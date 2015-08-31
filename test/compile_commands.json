@@ -1,7 +1,22 @@
 [
-    {
-	"directory": "/home/nitrous/code/nany-from-c/test",
-	"command": "/usr/bin/gcc -Wall -Wextra -W -std=c99 -I. -DNDEBUG -DPOSIX -c -o glew.o glew.c",
-	"file": "glew.c"
-    }
+	{
+		"directory": "/home/nitrous/code/nany-from-c/test",
+		"command": "/usr/bin/gcc -Wall -Wextra -W -std=c99 -I. -DNDEBUG -DPOSIX -c -o glew.o glew.c",
+		"file": "glew.c"
+	},
+	{
+		"directory": "/home/nitrous/code/nany-from-c/test",
+		"command": "/usr/bin/gcc -Wall -Wextra -W -std=c99 -I. -DNDEBUG -DPOSIX -c -o empty_main.o empty_main.c",
+		"file": "empty_main.c"
+	},
+	{
+		"directory": "/home/nitrous/code/nany-from-c/test",
+		"command": "/usr/bin/g++ -Wall -Wextra -W -std=c++11 -I. -DNDEBUG -DPOSIX -c -o classes.o classes.cpp",
+		"file": "classes.cpp"
+	},
+	{
+		"directory": "/home/nitrous/code/nany-from-c/test",
+		"command": "/usr/bin/gcc -Wall -Wextra -W -std=c11 -I. -DNDEBUG -DPOSIX -c -o vardecl.o vardecl.c",
+		"file": "vardecl.c"
+	}
 ]

@@ -1,5 +1,6 @@
 #include <yuni/yuni.h>
 #include <yuni/core/getopt.h>
+#include <iostream>
 #include "converter.h"
 
 
