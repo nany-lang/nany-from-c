@@ -36,14 +36,14 @@ namespace NanyFromC
 
 		//int result = tool.run(
 		//	clang::tooling::newFrontendActionFactory<clang::SyntaxOnlyAction>().get());
-		return 0 != tool.run(clang::tooling::newFrontendActionFactory<NanyConverterFrontendAction>().get());
-		/*
+		//return 0 != tool.run(clang::tooling::newFrontendActionFactory<NanyConverterFrontendAction>().get());
+
 		Yuni::String code;
 		Yuni::IO::File::LoadFromFile(code, pFilePath);
-		Yuni::String outputFile(pFilePath);
-		if (!Yuni::IO::ReplaceExtension(outputFile, ".o"))
-			outputFile.append(".o");
-		return clang::tooling::runToolOnCode(new NanyConverterFrontendAction(outputFile), code.c_str(), pFilePath.c_str());*/
+//		Yuni::String outputFile(pFilePath);
+//		if (!Yuni::IO::ReplaceExtension(outputFile, ".o"))
+//			outputFile.append(".o");
+		return clang::tooling::runToolOnCode(new NanyConverterFrontendAction(), code.c_str(), pFilePath.c_str());
 	}
 
 

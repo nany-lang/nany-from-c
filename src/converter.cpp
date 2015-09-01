@@ -1,3 +1,5 @@
+#include <yuni/yuni.h>
+#include <yuni/job/queue/service.h>
 #include <yuni/thread/utility.h>
 #include <vector>
 #include "converter.h"
@@ -17,14 +19,16 @@ namespace NanyFromC
 
 	uint Converter::runAllJobs()
 	{
-		std::vector<Yuni::Thread::IThread::Ptr> threads;
+		Yuni::Job::QueueService queueservice;
+		queueservice.start();
 		uint nbErrors = 0;
 
 		for (const auto& file : pJobs)
 		{
-			threads.push_back(Yuni::spawn([&]() {
+			Yuni::async(queueservice, [&]()
+			{
 				Parser parser(file);
-				if (!parser.run())
+				if (not parser.run())
 				{
 					onFail(Yuni::String(file) << " : Parse error : " << parser.error());
 					Yuni::MutexLocker lock(pMutex);
@@ -40,14 +44,10 @@ namespace NanyFromC
 				//		++nbErrors;
 				//		return;
 				// }
-			}));
+			});
 		}
 
-		for (const auto& thread : threads)
-		{
-			thread->wait();
-		}
-
+		queueservice.wait(Yuni::qseIdle);
 		pJobs.clear();
 		return nbErrors;
 	}

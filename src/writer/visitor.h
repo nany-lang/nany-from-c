@@ -4,27 +4,29 @@
 #include <yuni/core/string.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/FrontendActions.h>
-#include <clang/AST/DataRecursiveASTVisitor.h>
+#include <clang/AST/RecursiveASTVisitor.h>
 #include <iostream>
 
 
 namespace NanyFromC
 {
 
-	class NanyConverterVisitor final : public clang::DataRecursiveASTVisitor<NanyConverterVisitor>
+	class NanyConverterVisitor final
 	{
-	public:
-		typedef clang::DataRecursiveASTVisitor<NanyConverterVisitor>  ParentT;
-
 	public:
 		NanyConverterVisitor(clang::ASTContext* context): pContext(context)
 		{}
 
+		bool VisitAttr(clang::Attr *attr);
+		bool VisitType(const clang::Type* type);
+
 		bool VisitDecl(clang::Decl* decl);
+		bool VisitTranslationUnitDecl(clang::TranslationUnitDecl* decl);
 		bool VisitVarDecl(clang::VarDecl* decl);
 		bool VisitParmVarDecl(clang::ParmVarDecl* decl);
 		bool VisitFunctionDecl(clang::FunctionDecl* decl);
 		bool VisitCXXMethodDecl(clang::CXXMethodDecl* decl);
+		bool VisitTypedefDecl(clang::TypedefDecl* decl);
 		bool VisitRecordDecl(clang::RecordDecl* decl);
 		bool VisitCXXRecordDecl(clang::CXXRecordDecl* decl);
 
@@ -49,7 +51,7 @@ namespace NanyFromC
 		virtual void HandleTranslationUnit(clang::ASTContext& context) override
 		{
 			// Start AST visit
-			pVisitor.TraverseDecl(context.getTranslationUnitDecl());
+			pVisitor.VisitTranslationUnitDecl(context.getTranslationUnitDecl());
 		}
 
 	private:
@@ -60,9 +62,6 @@ namespace NanyFromC
 	class NanyConverterFrontendAction final : public clang::ASTFrontendAction
 	{
 	public:
-		NanyConverterFrontendAction()
-		{}
-
 		virtual std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance& ci, llvm::StringRef file) override
 		{
 			return std::unique_ptr<clang::ASTConsumer>(new NanyConverterASTConsumer(&ci.getASTContext()));
