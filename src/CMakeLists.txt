@@ -44,9 +44,9 @@ endif()
 
 include("cmake/FindLibClang.cmake")
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${YUNI_CXXFLAGS} -I. -Wall -Wextra -W -Wno-unused-parameter -DDEBUG -ggdb3 ${INCLUDES} -I${LIBCLANG_INCLUDES}")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${YUNI_CXXFLAGS} -I. -Wall -Wextra -W -Wno-unused-parameter -DDEBUG -g -ggdb -ggdb3 ${INCLUDES} -I${LIBCLANG_INCLUDES}")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${YUNI_CXXFLAGS} -I. -Wall -Wextra -W -Wno-unused-parameter -DNDEBUG -O3 ${INCLUDES} -I${LIBCLANG_INCLUDES}")
-link_libraries("${YUNI_LIBS} ${LIBCLANG_LDFLAGS}")
+link_libraries("${YUNI_LIBS} ${LIBCLANG_LDFLAGS}" -g -ggdb -ggdb3)
 
 
 

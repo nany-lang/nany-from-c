@@ -15,8 +15,8 @@ namespace NanyFromC
 
 		bool run();
 
-		void* ast() { assert(false && "not implemented"); return nullptr; }
-		Yuni::String error() const { assert(false && "not implemented"); return "Not yet implemented"; }
+		void* ast() { return nullptr; }
+		Yuni::String error() const { return "Not yet implemented"; }
 
 	private:
 		AnyString pFilePath;

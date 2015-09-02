@@ -3,75 +3,120 @@
 namespace NanyFromC
 {
 
-	bool NanyConverterVisitor::VisitDecl(clang::Decl* decl)
+	bool NanyConverterVisitor::visitChildren(clang::Decl* decl)
 	{
-		std::cerr << ">> Decl" << std::endl;
-		if (!decl)
+		return visitDeclContext(decl->getDeclContext());
+	}
+
+	bool NanyConverterVisitor::visitRealDeclType(clang::Decl* decl)
+	{
+		if (not decl)
 			return true;
 
-		std::cerr << ">> Not null" << std::endl;
+		switch (decl->getKind())
+		{
+		case clang::Decl::Var:
+			return visitVarDecl(static_cast<clang::VarDecl*>(decl));
+		case clang::Decl::ParmVar:
+			return true; // ParmVarDecl nodes are visited on-the-fly during function decl / call
+		case clang::Decl::Function:
+			return visitFunctionDecl(static_cast<clang::FunctionDecl*>(decl));
+		case clang::Decl::CXXMethod:
+			return visitCXXMethodDecl(static_cast<clang::CXXMethodDecl*>(decl));
+		case clang::Decl::Record:
+			return visitRecordDecl(static_cast<clang::RecordDecl*>(decl));
+		case clang::Decl::CXXRecord:
+			return visitCXXRecordDecl(static_cast<clang::CXXRecordDecl*>(decl));
+		case clang::Decl::Typedef:
+			return visitTypedefDecl(static_cast<clang::TypedefDecl*>(decl));
+		default:
+			std::cerr << "Node \"" << decl->getDeclKindName() << "\" is not yet implemented !" << std::endl;
+			return true;
+		}
+		return true;
+	}
+
+	bool NanyConverterVisitor::visitRealStmtType(clang::Stmt* stmt)
+	{
+		if (not stmt)
+			return true;
+
+		switch (stmt->getStmtClass())
+		{
+		case clang::Stmt::NoStmtClass:
+			break;
+		case clang::Stmt::DeclStmtClass:
+			return visitDeclStmt(static_cast<clang::DeclStmt*>(stmt));
+		case clang::Stmt::CompoundStmtClass:
+			return visitCompoundStmt(static_cast<clang::CompoundStmt*>(stmt));
+		case clang::Stmt::ReturnStmtClass:
+			return visitReturnStmt(static_cast<clang::ReturnStmt*>(stmt));
+		case clang::Stmt::ImplicitCastExprClass:
+			return visitImplicitCastExpr(static_cast<clang::ImplicitCastExpr*>(stmt));
+		case clang::Stmt::CStyleCastExprClass:
+		case clang::Stmt::CXXFunctionalCastExprClass:
+		case clang::Stmt::CXXStaticCastExprClass:
+			return visitExplicitCastExpr(static_cast<clang::ExplicitCastExpr*>(stmt));
+		case clang::Stmt::CharacterLiteralClass:
+			return visitCharacterLiteral(static_cast<clang::CharacterLiteral*>(stmt));
+		case clang::Stmt::StringLiteralClass:
+			return visitStringLiteral(static_cast<clang::StringLiteral*>(stmt));
+		case clang::Stmt::IntegerLiteralClass:
+			return visitIntegerLiteral(static_cast<clang::IntegerLiteral*>(stmt));
+		case clang::Stmt::FloatingLiteralClass:
+			return visitFloatingLiteral(static_cast<clang::FloatingLiteral*>(stmt));
+		default:
+			std::cerr << "Node \"" << stmt->getStmtClassName() << "\" is not yet implemented !" << std::endl;
+			return true;
+		}
+		return true;
+	}
+
+	bool NanyConverterVisitor::visitDecl(clang::Decl* decl)
+	{
+		if (not decl)
+			return true;
+
 		// As a syntax visitor, we want to ignore declarations for
 		// implicitly-defined declarations (ones not typed explicitly by the
 		// user).
 		if (decl->isImplicit())
 			return true;
 
-		std::cerr << ">> Not implicit" << std::endl;
-
-		clang::Decl* child;
-		while ((child = decl->getNextDeclInContext()) != nullptr)
-		{
-			std::cerr << ">> Next is : " << child->getDeclKindName() << std::endl;
-			switch (child->getKind())
-			{
-			case clang::Decl::Var:
-				if (!VisitVarDecl(static_cast<clang::VarDecl*>(child)))
-					return false;
-				else
-					break;
-			case clang::Decl::ParmVar:
-				VisitParmVarDecl(static_cast<clang::ParmVarDecl*>(child));
-				return true;
-			case clang::Decl::Function:
-				VisitFunctionDecl(static_cast<clang::FunctionDecl*>(child));
-				return true;
-			case clang::Decl::CXXMethod:
-				VisitCXXMethodDecl(static_cast<clang::CXXMethodDecl*>(child));
-				return true;
-			case clang::Decl::Record:
-				VisitRecordDecl(static_cast<clang::RecordDecl*>(child));
-				return true;
-			case clang::Decl::CXXRecord:
-				VisitCXXRecordDecl(static_cast<clang::CXXRecordDecl*>(child));
-				return true;
-			case clang::Decl::Typedef:
-				VisitTypedefDecl(static_cast<clang::TypedefDecl*>(child));
-				return true;
-			}
-		}
-
-		std::cerr << ">> No child managed" << std::endl;
+		if (!visitChildren(decl))
+			return false;
 
 		// Visit any attributes attached to this declaration.
 		for (auto* attr : decl->attrs())
 		{
-			if (not VisitAttr(attr))
+			if (not visitAttr(attr))
 				return false;
 		}
-
-		if (decl->hasBody())
-			VisitStmt(decl->getBody());
 		return true;
 	}
 
-	bool NanyConverterVisitor::VisitTranslationUnitDecl(clang::TranslationUnitDecl* decl)
+	bool NanyConverterVisitor::visitDeclContext(clang::DeclContext* context)
+	{
+		if (not context)
+			return true;
+
+		for (auto* child : context->decls())
+		{
+			// BlockDecls and CapturedDecls are traversed through BlockExprs and
+			// CapturedStmts respectively.
+			if (!llvm::isa<clang::BlockDecl>(child) && !llvm::isa<clang::CapturedDecl>(child))
+				visitRealDeclType(child);
+		}
+		return true;
+	}
+
+	bool NanyConverterVisitor::visitTranslationUnitDecl(clang::TranslationUnitDecl* decl)
 	{
 		std::cerr << ">> TranslationUnitDecl" << std::endl;
-		VisitDecl(decl);
-		return true;
+		return visitDeclContext(decl);
 	}
 
-	bool NanyConverterVisitor::VisitVarDecl(clang::VarDecl* decl)
+	bool NanyConverterVisitor::visitVarDecl(clang::VarDecl* decl)
 	{
 		std::cerr << ">> VarDecl" << std::endl;
 
@@ -92,40 +137,36 @@ namespace NanyFromC
 		else
 		{
 			std::cout << " = ";
-			VisitStmt(decl->getInit());
+			visitStmt(decl->getInit());
 		}
 		std::cout << ";\n";
 		return true;
 	}
 
-	bool NanyConverterVisitor::VisitParmVarDecl(clang::ParmVarDecl* decl)
+	bool NanyConverterVisitor::visitParmVarDecl(clang::ParmVarDecl* decl)
 	{
 		std::cerr << ">> ParmVarDecl" << std::endl;
 		std::cout << decl->getNameAsString();
 		return true;
 	}
 
-	bool NanyConverterVisitor::VisitCXXMethodDecl(clang::CXXMethodDecl* decl)
+	bool NanyConverterVisitor::visitFunctionDecl(clang::FunctionDecl* decl)
 	{
-		if (decl->isStatic())
-			std::cout << "class ";
-		std::cout << "func " << decl->getNameAsString();
-		if (not decl->isNoReturn())
-			std::cout << " : " << clang::QualType::getAsString(decl->getReturnType().split());
-		std::cout << "\n{" << "}\n";
-		return false;
-	}
+		std::cerr << ">> FunctionDecl" << std::endl;
+		if (not decl)
+			return true;
+		// Ignore forward declarations
+		if (not decl->isThisDeclarationADefinition())
+			return true;
 
-	bool NanyConverterVisitor::VisitFunctionDecl(clang::FunctionDecl* decl)
-	{
-		std::cout << "func " << decl->getNameAsString();
+		std::cout << "public func " << decl->getNameAsString();
 		if (decl->param_size() > 0)
 		{
 			uint i = 0;
 			std::cout << "(";
 			for (const auto& param : decl->params())
 			{
-				VisitParmVarDecl(param);
+				visitParmVarDecl(param);
 				if (i++ + 1 < decl->param_size())
 					std::cout << ", ";
 			}
@@ -134,55 +175,115 @@ namespace NanyFromC
 		if (not decl->isNoReturn())
 			std::cout << " : " << clang::QualType::getAsString(decl->getReturnType().split());
 		std::cout << "\n{\n";
+		if (not visitDeclContext(decl))
+			return false;
 		if (decl->hasBody())
-			VisitStmt(decl->getBody());
-		std::cout << "}\n";
+			if (not visitStmt(decl->getBody()))
+			return false;
+		std::cout << "}\n\n";
 		return true;
 	}
 
-	bool NanyConverterVisitor::VisitTypedefDecl(clang::TypedefDecl* decl)
+	bool NanyConverterVisitor::visitCXXMethodDecl(clang::CXXMethodDecl* decl)
+	{
+		std::cerr << ">> CXXMethodDecl" << std::endl;
+		return visitFunctionDecl(decl);
+	}
+
+	bool NanyConverterVisitor::visitTypedefDecl(clang::TypedefDecl* decl)
 	{
 		std::cerr << ">> TypedefDecl" << std::endl;
 
 		std::cout << "typedef " << decl->getNameAsString() << " : ";
-		VisitType(decl->getTypeForDecl());
+		//visitType(decl->getTypeForDecl());
+		std::cout << ";\n";
 		return true;
 	}
 
-	bool NanyConverterVisitor::VisitRecordDecl(clang::RecordDecl* decl)
+	bool NanyConverterVisitor::visitRecordDecl(clang::RecordDecl* decl)
 	{
-		if (decl->getPreviousDecl() != nullptr)
+		if (not decl)
 			return true;
-		std::cout << "[[C]]\nclass "
+		// Ignore forward declarations
+		if (not decl->isThisDeclarationADefinition())
+			return true;
+
+		if (not llvm::isa<clang::CXXRecordDecl>(decl))
+			std::cout << "[[C]]\n";
+		if (decl->isInAnonymousNamespace())
+			std::cout << "private ";
+		else
+			std::cout << "public ";
+		std::cout << "class "
 			<< decl->getDefinition()->getNameAsString()
 			<< "\n{\n";
 		for (auto* field : decl->fields())
 		{
-			VisitDecl(field);
+			visitDecl(field);
 		}
 		std::cout << "}\n";
 		return true;
 	}
 
-	bool NanyConverterVisitor::VisitCXXRecordDecl(clang::CXXRecordDecl* decl)
+	bool NanyConverterVisitor::visitCXXRecordDecl(clang::CXXRecordDecl* decl)
 	{
-		if (decl->getPreviousDecl() != nullptr)
+		std::cerr << ">> CXXRecordDecl" << std::endl;
+		return visitRecordDecl(decl);
+	}
+
+
+	bool NanyConverterVisitor::visitStmt(clang::Stmt* stmt)
+	{
+		return visitRealStmtType(stmt);
+	}
+
+	bool NanyConverterVisitor::visitDeclStmt(clang::DeclStmt* stmt)
+	{
+		if (not stmt)
 			return true;
-		std::cout << "class " << decl->getDefinition()->getNameAsString();
-		std::cout << "\n{\n";
-		std::cout << "}\n";
+
+		for (const auto& child : stmt->children())
+		{
+			visitStmt(child);
+		}
+		return true;
+	}
+
+	bool NanyConverterVisitor::visitReturnStmt(clang::ReturnStmt* stmt)
+	{
+		std::cerr << ">> ReturnStmt" << std::endl;
+		std::cout << "return ";
+		visitStmt(stmt->getRetValue());
+		std::cout << ";\n";
+		return true;
+	}
+
+	bool NanyConverterVisitor::visitCompoundStmt(clang::CompoundStmt* stmt)
+	{
+		std::cerr << ">> CompoundStmt" << std::endl;
+		if (not stmt)
+			return true;
+
+		for (auto* child : stmt->body())
+		{
+			visitStmt(child);
+		}
 		return true;
 	}
 
 
-	bool NanyConverterVisitor::VisitCallExpr(clang::CallExpr* expr)
+	bool NanyConverterVisitor::visitCallExpr(clang::CallExpr* expr)
 	{
+		std::cerr << ">> CallExpr" << std::endl;
+		if (not expr)
+			return true;
+
 		if (expr->getCallee() != nullptr)
 			std::cout << expr->getCalleeDecl()->getAsFunction()->getNameAsString() << '(';
 		uint i = 0;
 		for (const auto& arg : expr->arguments())
 		{
-			VisitStmt(arg);
+			visitStmt(arg);
 			if (i++ + 1 < expr->getNumArgs())
 				std::cout << ", ";
 		}
@@ -190,40 +291,66 @@ namespace NanyFromC
 		return true;
 	}
 
-	bool NanyConverterVisitor::VisitStmt(clang::Stmt* stmt)
+	bool NanyConverterVisitor::visitCastExpr(clang::CastExpr* expr)
 	{
+		std::cout << "new ";
+		// TODO : Get the type
+		std::cout << "(";
+		visitStmt(expr->getSubExpr());
+		std::cout << ")";
 		return true;
 	}
 
-	bool NanyConverterVisitor::VisitReturnStmt(clang::ReturnStmt* stmt)
+	bool NanyConverterVisitor::visitImplicitCastExpr(clang::ImplicitCastExpr* expr)
 	{
-		std::cout << "return ";
-		VisitStmt(stmt->getRetValue());
-		std::cout << ";\n";
-		return true;
+		std::cerr << ">> ImplicitCastExpr" << std::endl;
+		return visitCastExpr(expr);
 	}
 
-	bool NanyConverterVisitor::VisitCharacterLiteral(clang::CharacterLiteral* stmt)
+	bool NanyConverterVisitor::visitExplicitCastExpr(clang::ExplicitCastExpr* expr)
+	{
+		std::cerr << ">> ExplicitCastExpr" << std::endl;
+		return visitCastExpr(expr);
+	}
+
+
+	bool NanyConverterVisitor::visitCharacterLiteral(clang::CharacterLiteral* stmt)
 	{
 		std::cout << stmt->getValue();
 		return true;
 	}
 
-	bool NanyConverterVisitor::VisitIntegerLiteral(clang::IntegerLiteral* stmt)
+	bool NanyConverterVisitor::visitStringLiteral(clang::StringLiteral* stmt)
+	{
+		std::cout << '"' << stmt->getString().data() << '"';
+		return true;
+	}
+
+	bool NanyConverterVisitor::visitIntegerLiteral(clang::IntegerLiteral* stmt)
 	{
 		std::cout << *(stmt->getValue().getRawData());
 		return true;
 	}
 
+	bool NanyConverterVisitor::visitFloatingLiteral(clang::FloatingLiteral* stmt)
+	{
+		llvm::SmallVector<char, 32> dest;
+		stmt->getValue().toString(dest);
+		std::cout << std::string(dest.begin(), dest.end());
+		return true;
+	}
 
 
-	bool NanyConverterVisitor::VisitAttr(clang::Attr *attr)
+
+	bool NanyConverterVisitor::visitAttr(clang::Attr *attr)
 	{
 		return true;
 	}
 
-	bool NanyConverterVisitor::VisitType(const clang::Type* type)
+	bool NanyConverterVisitor::visitType(const clang::Type* type)
 	{
+		if (not type)
+			return true;
 		std::cout << type->getTypeClassName();
 		return true;
 	}

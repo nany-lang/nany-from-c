@@ -19,4 +19,5 @@ Makefile
 CMakeCache.txt
 src/ProfileBuild.cmake
 cmake_install.cmake
-/src/config.h
+src/config.h
+src/nany-from-c*

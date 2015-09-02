@@ -41,8 +41,8 @@ namespace NanyFromC
 		Yuni::String code;
 		Yuni::IO::File::LoadFromFile(code, pFilePath);
 //		Yuni::String outputFile(pFilePath);
-//		if (!Yuni::IO::ReplaceExtension(outputFile, ".o"))
-//			outputFile.append(".o");
+//		if (!Yuni::IO::ReplaceExtension(outputFile, ".ny"))
+//			outputFile.append(".ny");
 		return clang::tooling::runToolOnCode(new NanyConverterFrontendAction(), code.c_str(), pFilePath.c_str());
 	}
 

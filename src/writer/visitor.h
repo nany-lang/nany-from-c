@@ -17,25 +17,41 @@ namespace NanyFromC
 		NanyConverterVisitor(clang::ASTContext* context): pContext(context)
 		{}
 
-		bool VisitAttr(clang::Attr *attr);
-		bool VisitType(const clang::Type* type);
+		bool visitAttr(clang::Attr *attr);
+		bool visitType(const clang::Type* type);
 
-		bool VisitDecl(clang::Decl* decl);
-		bool VisitTranslationUnitDecl(clang::TranslationUnitDecl* decl);
-		bool VisitVarDecl(clang::VarDecl* decl);
-		bool VisitParmVarDecl(clang::ParmVarDecl* decl);
-		bool VisitFunctionDecl(clang::FunctionDecl* decl);
-		bool VisitCXXMethodDecl(clang::CXXMethodDecl* decl);
-		bool VisitTypedefDecl(clang::TypedefDecl* decl);
-		bool VisitRecordDecl(clang::RecordDecl* decl);
-		bool VisitCXXRecordDecl(clang::CXXRecordDecl* decl);
+		bool visitDecl(clang::Decl* decl);
+		bool visitDeclContext(clang::DeclContext* context);
 
-		bool VisitCallExpr(clang::CallExpr* expr);
+		bool visitTranslationUnitDecl(clang::TranslationUnitDecl* decl);
+		bool visitVarDecl(clang::VarDecl* decl);
+		bool visitParmVarDecl(clang::ParmVarDecl* decl);
+		bool visitFunctionDecl(clang::FunctionDecl* decl);
+		bool visitCXXMethodDecl(clang::CXXMethodDecl* decl);
+		bool visitTypedefDecl(clang::TypedefDecl* decl);
+		bool visitRecordDecl(clang::RecordDecl* decl);
+		bool visitCXXRecordDecl(clang::CXXRecordDecl* decl);
 
-		bool VisitStmt(clang::Stmt* stmt);
-		bool VisitReturnStmt(clang::ReturnStmt* stmt);
-		bool VisitCharacterLiteral(clang::CharacterLiteral* stmt);
-		bool VisitIntegerLiteral(clang::IntegerLiteral* stmt);
+		bool visitCallExpr(clang::CallExpr* expr);
+
+		bool visitStmt(clang::Stmt* stmt);
+		bool visitDeclStmt(clang::DeclStmt* stmt);
+		bool visitReturnStmt(clang::ReturnStmt* stmt);
+		bool visitCompoundStmt(clang::CompoundStmt* stmt);
+
+		bool visitCastExpr(clang::CastExpr* expr);
+		bool visitImplicitCastExpr(clang::ImplicitCastExpr* expr);
+		bool visitExplicitCastExpr(clang::ExplicitCastExpr* expr);
+
+		bool visitCharacterLiteral(clang::CharacterLiteral* stmt);
+		bool visitStringLiteral(clang::StringLiteral* stmt);
+		bool visitIntegerLiteral(clang::IntegerLiteral* stmt);
+		bool visitFloatingLiteral(clang::FloatingLiteral* stmt);
+
+	private:
+		bool visitChildren(clang::Decl* decl);
+		bool visitRealDeclType(clang::Decl* decl);
+		bool visitRealStmtType(clang::Stmt* stmt);
 
 	private:
 		clang::ASTContext* pContext;
@@ -51,7 +67,7 @@ namespace NanyFromC
 		virtual void HandleTranslationUnit(clang::ASTContext& context) override
 		{
 			// Start AST visit
-			pVisitor.VisitTranslationUnitDecl(context.getTranslationUnitDecl());
+			pVisitor.visitTranslationUnitDecl(context.getTranslationUnitDecl());
 		}
 
 	private:
