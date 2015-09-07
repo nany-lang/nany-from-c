@@ -1,11 +1,11 @@
 #pragma once
-
 #include <yuni/yuni.h>
 #include <yuni/core/string.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/FrontendActions.h>
 #include <clang/AST/RecursiveASTVisitor.h>
-#include <iostream>
+#include "indenter.h"
+#include "visibilitystack.h"
 
 
 namespace NanyFromC
@@ -20,84 +20,89 @@ namespace NanyFromC
 		{}
 
 		//! Entry point for a whole compilation unit
-		bool visitTranslationUnitDecl(clang::TranslationUnitDecl* decl);
+		bool visitTranslationUnitDecl(const clang::TranslationUnitDecl* decl);
 
 	private:
 		NanyConverterVisitor(const NanyConverterVisitor& other) = delete;
-		NanyConverterVisitor(const NanyConverterVisitor&& other) = delete;
+		NanyConverterVisitor(NanyConverterVisitor&& other) = delete;
 		NanyConverterVisitor& operator = (const NanyConverterVisitor& other) = delete;
-		NanyConverterVisitor& operator = (const NanyConverterVisitor&& other) = delete;
+		NanyConverterVisitor& operator = (NanyConverterVisitor&& other) = delete;
 
 	private:
-		bool visitAttr(clang::Attr *attr);
+		bool visitAttr(const clang::Attr* attr);
 		bool visitType(const clang::Type* type);
 		bool visitType(const clang::QualType& type);
 
 		//! Default behaviour for declarations
-		bool visitDecl(clang::Decl* decl);
+		bool visitDecl(const clang::Decl* decl);
 		//! Declaration contexts are scopes containing declarations
-		bool visitDeclContext(clang::DeclContext* context);
+		bool visitDeclContext(const clang::DeclContext* context);
 
 		// Variable declaration
-		bool visitVarDecl(clang::VarDecl* decl);
+		bool visitVarDecl(const clang::VarDecl* decl);
 		//! Call parameters
-		bool visitParmVarDecl(clang::ParmVarDecl* decl);
-		bool visitFunctionDecl(clang::FunctionDecl* decl);
-		bool visitCXXMethodDecl(clang::CXXMethodDecl* decl);
-		bool visitTypedefDecl(clang::TypedefDecl* decl);
+		bool visitParmVarDecl(const clang::ParmVarDecl* decl);
+		bool visitFieldDecl(const clang::FieldDecl* decl);
+		bool visitFunctionDecl(const clang::FunctionDecl* decl);
+		bool visitCXXConstructorDecl(const clang::CXXConstructorDecl* decl);
+		bool visitCXXDestructorDecl(const clang::CXXDestructorDecl* decl);
+		bool visitCXXMethodDecl(const clang::CXXMethodDecl* decl);
+		bool visitTypedefDecl(const clang::TypedefDecl* decl);
+		//! Enum type declaration
+		bool visitEnumDecl(const clang::EnumDecl* decl);
+		//! Enum value declaration
+		bool visitEnumConstantDecl(const clang::EnumConstantDecl* decl);
 		//! C struct
-		bool visitRecordDecl(clang::RecordDecl* decl);
+		bool visitRecordDecl(const clang::RecordDecl* decl);
 		//! C++ struct / class
-		bool visitCXXRecordDecl(clang::CXXRecordDecl* decl);
+		bool visitCXXRecordDecl(const clang::CXXRecordDecl* decl);
 
 		//! Default behaviour for statements (and exprs)
-		bool visitStmt(clang::Stmt* stmt);
-		bool visitReturnStmt(clang::ReturnStmt* stmt);
-		bool visitCompoundStmt(clang::CompoundStmt* stmt);
+		bool visitStmt(const clang::Stmt* stmt);
+		bool visitReturnStmt(const clang::ReturnStmt* stmt);
+		bool visitCompoundStmt(const clang::CompoundStmt* stmt);
 
 		//! Variable use
-		bool visitDeclRefExpr(clang::DeclRefExpr* expr);
+		bool visitDeclRefExpr(const clang::DeclRefExpr* expr);
+		//! Class member use
+		bool visitMemberExpr(const clang::MemberExpr* expr);
 		//! Function call
-		bool visitCallExpr(clang::CallExpr* expr);
+		bool visitCallExpr(const clang::CallExpr* expr);
+		bool visitCXXNewExpr(const clang::CXXNewExpr* expr);
+		bool visitCXXDeleteExpr(const clang::CXXDeleteExpr* expr);
 		//! All unary operators, both prefix or postfix
-		bool visitUnaryOperator(clang::UnaryOperator* expr);
+		bool visitUnaryOperator(const clang::UnaryOperator* expr);
 		//! Constructor call
-		bool visitCXXConstructExpr(clang::CXXConstructExpr* decl);
+		bool visitCXXConstructExpr(const clang::CXXConstructExpr* decl);
 		//! All types of cast
-		bool visitCastExpr(clang::CastExpr* expr);
+		bool visitCastExpr(const clang::CastExpr* expr);
 		//! Implicit cast
-		bool visitImplicitCastExpr(clang::ImplicitCastExpr* expr);
+		bool visitImplicitCastExpr(const clang::ImplicitCastExpr* expr);
 		//! All explicit casts : c-style or c++-style
-		bool visitExplicitCastExpr(clang::ExplicitCastExpr* expr);
+		bool visitExplicitCastExpr(const clang::ExplicitCastExpr* expr);
 
-		bool visitCharacterLiteral(clang::CharacterLiteral* stmt);
-		bool visitStringLiteral(clang::StringLiteral* stmt);
-		bool visitIntegerLiteral(clang::IntegerLiteral* stmt);
-		bool visitFloatingLiteral(clang::FloatingLiteral* stmt);
+		bool visitCharacterLiteral(const clang::CharacterLiteral* stmt);
+		bool visitStringLiteral(const clang::StringLiteral* stmt);
+		bool visitIntegerLiteral(const clang::IntegerLiteral* stmt);
+		bool visitFloatingLiteral(const clang::FloatingLiteral* stmt);
 
 		//! Visit a declaration's children
-		bool visitChildren(clang::Decl* decl);
+		bool visitChildren(const clang::Decl* decl);
 		//! Dispatch the visitor to the correct dynamic type for this declaration
-		bool visitRealDeclType(clang::Decl* decl);
+		bool visitRealDeclType(const clang::Decl* decl);
 		//! Dispatch the visitor to the correct dynamic type for this statement / expr
-		bool visitRealStmtType(clang::Stmt* stmt);
+		bool visitRealStmtType(const clang::Stmt* stmt);
 
 		Yuni::String convertType(const clang::QualType& type) const;
 		Yuni::String convertType(const clang::Type* type) const;
 
-		void writeIndent() const
-		{
-			for (uint i = 0; i < pIndent; ++i)
-				std::cout << '\t';
-		}
-
-		void increaseIndent() { ++pIndent; }
-		void decreaseIndent() { --pIndent; }
-
 	private:
+		//! AST Context holds additional separate information about the AST
 		clang::ASTContext* pContext;
-		//! Indent level
-		uint pIndent;
+		//! Indenting management
+		Indenter pIndent;
+		//! Stack of current visibilities by scope
+		VisibilityStack pVisibilities;
 
 	}; // class NanyConverterVisitor
 

@@ -44,9 +44,9 @@ endif()
 
 include("cmake/FindLibClang.cmake")
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${YUNI_CXXFLAGS} -I. -Wall -Wextra -W -Wno-unused-parameter -DDEBUG -g -ggdb -ggdb3 ${INCLUDES} -I${LIBCLANG_INCLUDES}")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${YUNI_CXXFLAGS} -I. -Wall -Wextra -W -Wno-unused-parameter -DNDEBUG -O3 ${INCLUDES} -I${LIBCLANG_INCLUDES}")
-link_libraries("${YUNI_LIBS} ${LIBCLANG_LDFLAGS}" -g -ggdb -ggdb3)
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${YUNI_CXXFLAGS} -std=gnu++11 -I. -Wall -Wextra -W -Wno-unused-parameter -DDEBUG -g -ggdb -ggdb3 ${INCLUDES} -I${LIBCLANG_INCLUDES}")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${YUNI_CXXFLAGS} -std=gnu++11 -I. -Wall -Wextra -W -Wno-unused-parameter -DNDEBUG -O3 ${INCLUDES} -I${LIBCLANG_INCLUDES}")
+link_libraries("${YUNI_LIBS} ${LIBCLANG_LDFLAGS}")
 
 
 
@@ -73,6 +73,7 @@ add_executable(nany-from-c
 	parser/parser.h
 	writer/visitor.cpp
 	writer/visitor.h
+	writer/indenter.h
 )
 
 target_link_libraries(nany-from-c "${YUNI_LIBS}")
