@@ -1,5 +1,6 @@
 #pragma once
 #include <yuni/yuni.h>
+#include <yuni/core/logs.h>
 #include <yuni/core/string.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/FrontendActions.h>
@@ -17,7 +18,9 @@ namespace NanyFromC
 		NanyConverterVisitor(clang::ASTContext* context)
 			: pContext(context)
 			, pIndent(0u)
-		{}
+		{
+			//pLog.verbosityLevel = Yuni::Logs::Verbosity::Error::level;
+		}
 
 		//! Entry point for a whole compilation unit
 		bool visitTranslationUnitDecl(const clang::TranslationUnitDecl* decl);
@@ -48,6 +51,8 @@ namespace NanyFromC
 		bool visitCXXDestructorDecl(const clang::CXXDestructorDecl* decl);
 		bool visitCXXMethodDecl(const clang::CXXMethodDecl* decl);
 		bool visitTypedefDecl(const clang::TypedefDecl* decl);
+		//! Visibility specifier
+		bool visitAccessSpecDecl(const clang::AccessSpecDecl* decl);
 		//! Enum type declaration
 		bool visitEnumDecl(const clang::EnumDecl* decl);
 		//! Enum value declaration
@@ -60,6 +65,7 @@ namespace NanyFromC
 		//! Default behaviour for statements (and exprs)
 		bool visitStmt(const clang::Stmt* stmt);
 		bool visitReturnStmt(const clang::ReturnStmt* stmt);
+		bool visitIfStmt(const clang::IfStmt* stmt);
 		bool visitCompoundStmt(const clang::CompoundStmt* stmt);
 
 		//! Variable use
@@ -72,6 +78,10 @@ namespace NanyFromC
 		bool visitCXXDeleteExpr(const clang::CXXDeleteExpr* expr);
 		//! All unary operators, both prefix or postfix
 		bool visitUnaryOperator(const clang::UnaryOperator* expr);
+		//! All binary operators
+		bool visitBinaryOperator(const clang::BinaryOperator* expr);
+		//! Ternary operator
+		bool visitConditionalOperator(const clang::ConditionalOperator* expr);
 		//! Constructor call
 		bool visitCXXConstructExpr(const clang::CXXConstructExpr* decl);
 		//! All types of cast
@@ -80,14 +90,14 @@ namespace NanyFromC
 		bool visitImplicitCastExpr(const clang::ImplicitCastExpr* expr);
 		//! All explicit casts : c-style or c++-style
 		bool visitExplicitCastExpr(const clang::ExplicitCastExpr* expr);
+		//! Parentheses
+		bool visitParenExpr(const clang::ParenExpr* expr);
 
 		bool visitCharacterLiteral(const clang::CharacterLiteral* stmt);
 		bool visitStringLiteral(const clang::StringLiteral* stmt);
 		bool visitIntegerLiteral(const clang::IntegerLiteral* stmt);
 		bool visitFloatingLiteral(const clang::FloatingLiteral* stmt);
 
-		//! Visit a declaration's children
-		bool visitChildren(const clang::Decl* decl);
 		//! Dispatch the visitor to the correct dynamic type for this declaration
 		bool visitRealDeclType(const clang::Decl* decl);
 		//! Dispatch the visitor to the correct dynamic type for this statement / expr
@@ -99,6 +109,8 @@ namespace NanyFromC
 	private:
 		//! AST Context holds additional separate information about the AST
 		clang::ASTContext* pContext;
+		//! Logger
+		Yuni::Logs::Logger<> pLog;
 		//! Indenting management
 		Indenter pIndent;
 		//! Stack of current visibilities by scope

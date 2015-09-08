@@ -7,17 +7,17 @@
 
 namespace NanyFromC
 {
+	enum Visibility
+	{
+		vPublic,
+		vProtected,
+		vPrivate
+	};
+
 
 	class VisibilityStack
 	{
 	public:
-		enum Visibility
-		{
-			vPublic,
-			vProtected,
-			vPrivate
-		};
-
 		typedef std::vector<Visibility> Stack;
 
 	public:
@@ -40,10 +40,30 @@ namespace NanyFromC
 		}
 
 		Visibility current() const { return pCurrent; }
+		void current(Visibility newValue) { pCurrent = newValue; }
 
 	private:
 		Stack pStack;
 		Visibility pCurrent;
 	}; // VisibilityStack
+
+
+	inline std::ostream& operator << (std::ostream& out, const Visibility& visibility)
+	{
+		switch (visibility)
+		{
+			case vPublic:
+				out << "public";
+				break;
+			case vProtected:
+				out << "protected";
+				break;
+			case vPrivate:
+				out << "private";
+				break;
+		}
+		return out;
+	}
+
 
 } // namespace NanyFromC
