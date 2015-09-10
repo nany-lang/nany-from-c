@@ -18,8 +18,9 @@ namespace NanyFromC
 		NanyConverterVisitor(clang::ASTContext* context)
 			: pContext(context)
 			, pIndent(0u)
+			, pStatementStart(false)
 		{
-			//pLog.verbosityLevel = Yuni::Logs::Verbosity::Error::level;
+			pLog.verbosityLevel = Yuni::Logs::Verbosity::Error::level;
 		}
 
 		//! Entry point for a whole compilation unit
@@ -64,8 +65,11 @@ namespace NanyFromC
 
 		//! Default behaviour for statements (and exprs)
 		bool visitStmt(const clang::Stmt* stmt);
+		bool visitDeclStmt(const clang::DeclStmt* stmt);
 		bool visitReturnStmt(const clang::ReturnStmt* stmt);
 		bool visitIfStmt(const clang::IfStmt* stmt);
+		bool visitWhileStmt(const clang::WhileStmt* stmt);
+		bool visitForStmt(const clang::ForStmt* stmt);
 		bool visitCompoundStmt(const clang::CompoundStmt* stmt);
 
 		//! Variable use
@@ -80,7 +84,7 @@ namespace NanyFromC
 		bool visitUnaryOperator(const clang::UnaryOperator* expr);
 		//! All binary operators
 		bool visitBinaryOperator(const clang::BinaryOperator* expr);
-		//! Ternary operator
+		//! Ternary operator "? :"
 		bool visitConditionalOperator(const clang::ConditionalOperator* expr);
 		//! Constructor call
 		bool visitCXXConstructExpr(const clang::CXXConstructExpr* decl);
@@ -93,6 +97,7 @@ namespace NanyFromC
 		//! Parentheses
 		bool visitParenExpr(const clang::ParenExpr* expr);
 
+		bool visitCXXBoolLiteralExpr(const clang::CXXBoolLiteralExpr* expr);
 		bool visitCharacterLiteral(const clang::CharacterLiteral* stmt);
 		bool visitStringLiteral(const clang::StringLiteral* stmt);
 		bool visitIntegerLiteral(const clang::IntegerLiteral* stmt);
@@ -115,6 +120,8 @@ namespace NanyFromC
 		Indenter pIndent;
 		//! Stack of current visibilities by scope
 		VisibilityStack pVisibilities;
+		//! Use this to mark when a future simple expression is actually used as a statement
+		bool pStatementStart;
 
 	}; // class NanyConverterVisitor
 

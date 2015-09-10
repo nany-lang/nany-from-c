@@ -58,15 +58,15 @@ namespace NanyFromC
 		case clang::Stmt::NoStmtClass:
 			break;
 		case clang::Stmt::DeclStmtClass:
-			// DeclStmts are ignored
-			// They are redundant with simple decls and stmts
-			return true;
+			return visitDeclStmt(static_cast<const clang::DeclStmt*>(stmt));
 		case clang::Stmt::CompoundStmtClass:
 			return visitCompoundStmt(static_cast<const clang::CompoundStmt*>(stmt));
 		case clang::Stmt::ReturnStmtClass:
 			return visitReturnStmt(static_cast<const clang::ReturnStmt*>(stmt));
 		case clang::Stmt::IfStmtClass:
 			return visitIfStmt(static_cast<const clang::IfStmt*>(stmt));
+		case clang::Stmt::WhileStmtClass:
+			return visitWhileStmt(static_cast<const clang::WhileStmt*>(stmt));
 		case clang::Stmt::DeclRefExprClass:
 			return visitDeclRefExpr(static_cast<const clang::DeclRefExpr*>(stmt));
 		case clang::Stmt::MemberExprClass:
@@ -93,6 +93,8 @@ namespace NanyFromC
 			return visitExplicitCastExpr(static_cast<const clang::ExplicitCastExpr*>(stmt));
 		case clang::Stmt::ParenExprClass:
 			return visitParenExpr(static_cast<const clang::ParenExpr*>(stmt));
+		case clang::Stmt::CXXBoolLiteralExprClass:
+			return visitCXXBoolLiteralExpr(static_cast<const clang::CXXBoolLiteralExpr*>(stmt));
 		case clang::Stmt::CharacterLiteralClass:
 			return visitCharacterLiteral(static_cast<const clang::CharacterLiteral*>(stmt));
 		case clang::Stmt::StringLiteralClass:
@@ -413,8 +415,14 @@ namespace NanyFromC
 		return visitRealStmtType(stmt);
 	}
 
+	bool NanyConverterVisitor::visitDeclStmt(const clang::DeclStmt* stmt)
+	{
+		return visitDecl(stmt->getSingleDecl());
+	}
+
 	bool NanyConverterVisitor::visitReturnStmt(const clang::ReturnStmt* stmt)
 	{
+		pStatementStart = false;
 		pLog.debug() << "ReturnStmt";
 		std::cout << pIndent;
 		std::cout << "return ";
@@ -426,29 +434,101 @@ namespace NanyFromC
 	bool NanyConverterVisitor::visitIfStmt(const clang::IfStmt* stmt)
 	{
 		pLog.debug() << "IfStmt";
+		pStatementStart = false;
 		std::cout << pIndent << "if ";
 		// An if statement may declare a variable :
-		if (stmt->getConditionVariable())
+		if (stmt->getConditionVariableDeclStmt())
 		{
-			visitDecl(stmt->getConditionVariable());
+			visitStmt(stmt->getConditionVariableDeclStmt());
 			std::cout << " ";
 		}
 		visitStmt(stmt->getCond());
 		std::cout << " then\n";
-		++pIndent;
-		std::cout << pIndent;
-		visitStmt(stmt->getThen());
-		std::cout << ";\n";
-		--pIndent;
+		if (!llvm::isa<clang::CompoundStmt>(stmt->getThen()))
+		{
+			pStatementStart = true;
+			++pIndent;
+			visitStmt(stmt->getThen());
+			--pIndent;
+		}
+		else
+		{
+			std::cout << pIndent << "{\n";
+			++pIndent;
+			visitStmt(stmt->getThen());
+			--pIndent;
+			std::cout << pIndent << "}\n";
+		}
 		if (stmt->getElse())
 		{
 			std::cout << pIndent << "else\n";
 			++pIndent;
-			std::cout << pIndent;
 			visitStmt(stmt->getElse());
-			std::cout << ";\n";
 			--pIndent;
 		}
+		pStatementStart = false;
+		return true;
+	}
+
+	bool NanyConverterVisitor::visitWhileStmt(const clang::WhileStmt* stmt)
+	{
+		pLog.debug() << "WhileStmt";
+		if (not stmt)
+			return true;
+
+		pStatementStart = false;
+		std::cout << pIndent << "while ";
+		if (stmt->getConditionVariableDeclStmt())
+			visitStmt(stmt->getConditionVariableDeclStmt());
+		visitStmt(stmt->getCond());
+		std::cout << " do\n";
+		if (!llvm::isa<clang::CompoundStmt>(stmt->getBody()))
+		{
+			pStatementStart = true;
+			++pIndent;
+			visitStmt(stmt->getBody());
+			--pIndent;
+		}
+		else
+		{
+			std::cout << pIndent << "{\n";
+			++pIndent;
+			visitStmt(stmt->getBody());
+			--pIndent;
+			std::cout << pIndent << "}\n";
+		}
+		pStatementStart = false;
+		return true;
+	}
+
+	bool NanyConverterVisitor::visitForStmt(const clang::ForStmt* stmt)
+	{
+		pLog.debug() << "ForStmt";
+		if (not stmt)
+			return true;
+
+		pStatementStart = false;
+		std::cout << pIndent << "for ";
+		if (stmt->getConditionVariableDeclStmt())
+			visitStmt(stmt->getConditionVariableDeclStmt());
+		visitStmt(stmt->getCond());
+		std::cout << " do\n";
+		if (!llvm::isa<clang::CompoundStmt>(stmt->getBody()))
+		{
+			pStatementStart = true;
+			++pIndent;
+			visitStmt(stmt->getBody());
+			--pIndent;
+		}
+		else
+		{
+			std::cout << pIndent << "{\n";
+			++pIndent;
+			visitStmt(stmt->getBody());
+			--pIndent;
+			std::cout << pIndent << "}\n";
+		}
+		pStatementStart = false;
 		return true;
 	}
 
@@ -460,9 +540,11 @@ namespace NanyFromC
 
 		for (auto* child : stmt->body())
 		{
-			std::cout << 
-			visitStmt(child);
+			pStatementStart = true;
+			if (!visitStmt(child))
+				return true;
 		}
+		pStatementStart = false;
 		return true;
 	}
 
@@ -535,6 +617,8 @@ namespace NanyFromC
 		if (not expr)
 			return true;
 
+		bool isStmt = pStatementStart;
+		pStatementStart = false;
 		const char* op = "";
 		switch (expr->getOpcode())
 		{
@@ -561,12 +645,15 @@ namespace NanyFromC
 				pLog.error() << "Unary operator is not yet implemented : \'" << clang::UnaryOperator::getOpcodeStr(expr->getOpcode()).data() << '\'';
 				break;
 		}
-		std::cout << "!!!!! FOund unary op: \"" << op << "\"" << std::endl;
+		if (isStmt)
+			std::cout << pIndent;
 		if (not expr->isPostfix())
 			std::cout << op;
 		visitStmt(expr->getSubExpr());
 		if (expr->isPostfix())
 			std::cout << op;
+		if (isStmt)
+			std::cout << ";\n";
 		return true;
 	}
 
@@ -576,6 +663,8 @@ namespace NanyFromC
 		if (not expr)
 			return true;
 
+		bool isStmt = pStatementStart;
+		pStatementStart = false;
 		const char* op = "";
 		switch (expr->getOpcode())
 		{
@@ -611,21 +700,31 @@ namespace NanyFromC
 			op = expr->getOpcodeStr().data();
 			break;
 		}
+		if (isStmt)
+			std::cout << pIndent;
 		visitStmt(expr->getLHS());
 		std::cout << ' ' << op << ' ';
 		visitStmt(expr->getRHS());
+		if (isStmt)
+			std::cout << ";\n";
 		return true;
 	}
 
 	bool NanyConverterVisitor::visitConditionalOperator(const clang::ConditionalOperator* expr)
 	{
 		pLog.debug() << "ConditionalOperator";
+		bool isStmt = pStatementStart;
+		pStatementStart = false;
+		if (isStmt)
+			std::cout << pIndent;
 		std::cout << "if ";
 		visitStmt(expr->getCond());
 		std::cout << " then ";
 		visitStmt(expr->getLHS());
 		std::cout << " else ";
 		visitStmt(expr->getRHS());
+		if (isStmt)
+			std::cout << ";\n";
 		return true;
 	}
 
@@ -646,11 +745,20 @@ namespace NanyFromC
 
 	bool NanyConverterVisitor::visitCastExpr(const clang::CastExpr* expr)
 	{
-		std::cout << "new ";
-		visitType(expr->getType());
-		std::cout << "(";
-		visitStmt(expr->getSubExpr());
-		std::cout << ")";
+		if (clang::CK_LValueToRValue == expr->getCastKind())
+		{
+			// Ignore the cast when possible
+			visitStmt(expr->getSubExpr());
+		}
+		else
+		{
+			// In the default case, use the copy constructor to cast
+			std::cout << "new ";
+			visitType(expr->getType());
+			std::cout << "(";
+			visitStmt(expr->getSubExpr());
+			std::cout << ")";
+		}
 		return true;
 	}
 
@@ -675,6 +783,13 @@ namespace NanyFromC
 		return true;
 	}
 
+
+	bool NanyConverterVisitor::visitCXXBoolLiteralExpr(const clang::CXXBoolLiteralExpr* expr)
+	{
+		pLog.debug() << "CXXBoolLiteralExpr";
+		std::cout << (expr->getValue() ? "true" : "false");
+		return true;
+	}
 
 	bool NanyConverterVisitor::visitCharacterLiteral(const clang::CharacterLiteral* stmt)
 	{
