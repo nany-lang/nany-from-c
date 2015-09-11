@@ -121,6 +121,9 @@ namespace NanyFromC
 		if (decl->isImplicit())
 			return true;
 
+		if (!visitRealDeclType(decl))
+			return true;
+
 		// Visit any attributes attached to this declaration.
 		for (auto* attr : decl->attrs())
 		{
@@ -393,10 +396,7 @@ namespace NanyFromC
 		++pIndent;
 		// Default visibility in classes is Public
 		pVisibilities.push(Visibility::vPublic);
-		for (auto* field : decl->fields())
-		{
-			visitDecl(field);
-		}
+		visitDeclContext(decl);
 		pVisibilities.pop();
 		--pIndent;
 		std::cout << pIndent << "}\n";
