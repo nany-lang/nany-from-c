@@ -13,5 +13,10 @@ int main()
 		int a = 2;
 		return 1;
 	}
+
+	for (int j = 0; j < 100; ++j)
+	{
+		j += 1;
+	}
 	return 0;
 }

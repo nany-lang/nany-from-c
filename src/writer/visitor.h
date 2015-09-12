@@ -86,6 +86,8 @@ namespace NanyFromC
 		bool visitBinaryOperator(const clang::BinaryOperator* expr);
 		//! Ternary operator "? :"
 		bool visitConditionalOperator(const clang::ConditionalOperator* expr);
+		//! X= operators
+		bool visitCompoundAssignOperator(const clang::CompoundAssignOperator* expr);
 		//! Constructor call
 		bool visitCXXConstructExpr(const clang::CXXConstructExpr* decl);
 		//! All types of cast

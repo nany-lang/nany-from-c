@@ -67,6 +67,8 @@ namespace NanyFromC
 			return visitIfStmt(static_cast<const clang::IfStmt*>(stmt));
 		case clang::Stmt::WhileStmtClass:
 			return visitWhileStmt(static_cast<const clang::WhileStmt*>(stmt));
+		case clang::Stmt::ForStmtClass:
+			return visitForStmt(static_cast<const clang::ForStmt*>(stmt));
 		case clang::Stmt::DeclRefExprClass:
 			return visitDeclRefExpr(static_cast<const clang::DeclRefExpr*>(stmt));
 		case clang::Stmt::MemberExprClass:
@@ -83,6 +85,8 @@ namespace NanyFromC
 			return visitBinaryOperator(static_cast<const clang::BinaryOperator*>(stmt));
 		case clang::Stmt::ConditionalOperatorClass:
 			return visitConditionalOperator(static_cast<const clang::ConditionalOperator*>(stmt));
+		case clang::Stmt::CompoundAssignOperatorClass:
+			return visitCompoundAssignOperator(static_cast<const clang::CompoundAssignOperator*>(stmt));
 		case clang::Stmt::CXXConstructExprClass:
 			return visitCXXConstructExpr(static_cast<const clang::CXXConstructExpr*>(stmt));
 		case clang::Stmt::ImplicitCastExprClass:
@@ -231,9 +235,7 @@ namespace NanyFromC
 			std::cout << " : " << clang::QualType::getAsString(decl->getReturnType().split());
 		std::cout << '\n' << pIndent << "{\n";
 		++pIndent;
-		if (not visitDeclContext(decl))
-			return false;
-		if (decl->hasBody())
+		if (decl->getBody())
 			if (not visitStmt(decl->getBody()))
 				return false;
 		--pIndent;
@@ -508,12 +510,13 @@ namespace NanyFromC
 			return true;
 
 		pStatementStart = false;
-		std::cout << pIndent << "for ";
+		visitStmt(stmt->getInit());
+		std::cout << pIndent << "while ";
 		if (stmt->getConditionVariableDeclStmt())
 			visitStmt(stmt->getConditionVariableDeclStmt());
 		visitStmt(stmt->getCond());
 		std::cout << " do\n";
-		if (!llvm::isa<clang::CompoundStmt>(stmt->getBody()))
+		if (!llvm::isa<clang::CompoundStmt>(stmt->getBody()) && stmt->getInc() == nullptr)
 		{
 			pStatementStart = true;
 			++pIndent;
@@ -525,6 +528,8 @@ namespace NanyFromC
 			std::cout << pIndent << "{\n";
 			++pIndent;
 			visitStmt(stmt->getBody());
+			pStatementStart = true;
+			visitStmt(stmt->getInc());
 			--pIndent;
 			std::cout << pIndent << "}\n";
 		}
@@ -686,14 +691,8 @@ namespace NanyFromC
 		case clang::BO_PtrMemI:
 		case clang::BO_Shl:
 		case clang::BO_Shr:
-		case clang::BO_ShlAssign:
-		case clang::BO_ShrAssign:
-		case clang::BO_RemAssign:
-		case clang::BO_AndAssign:
-		case clang::BO_XorAssign:
-		case clang::BO_OrAssign:
 		case clang::BO_Comma:
-			std::cerr << "Binary operator " << expr->getOpcodeStr().data() << " is not yet implemented";
+			std::cerr << "Binary operator \"" << expr->getOpcodeStr().data() << "\" is not yet implemented";
 			return true;
 		default:
 			// All other binary operators are the same in Nany and can be copied directly
@@ -722,6 +721,38 @@ namespace NanyFromC
 		std::cout << " then ";
 		visitStmt(expr->getLHS());
 		std::cout << " else ";
+		visitStmt(expr->getRHS());
+		if (isStmt)
+			std::cout << ";\n";
+		return true;
+	}
+
+	bool NanyConverterVisitor::visitCompoundAssignOperator(const clang::CompoundAssignOperator* expr)
+	{
+		pLog.debug() << "ConditionalOperator";
+		bool isStmt = pStatementStart;
+		pStatementStart = false;
+		const char* op = "";
+		switch (expr->getOpcode())
+		{
+		case clang::BO_MulAssign:
+		case clang::BO_DivAssign:
+		case clang::BO_AddAssign:
+		case clang::BO_SubAssign:
+			op = expr->getOpcodeStr().data();
+			break;
+		case clang::BO_RemAssign:
+		case clang::BO_ShlAssign:
+		case clang::BO_ShrAssign:
+		default:
+			std::cerr << "Compound Assignment operator \"" << expr->getOpcodeStr().data() << "\" is not yet implemented";
+			return true;
+		}
+
+		if (isStmt)
+			std::cout << pIndent;
+		visitStmt(expr->getLHS());
+		std::cout << ' ' << op << ' ';
 		visitStmt(expr->getRHS());
 		if (isStmt)
 			std::cout << ";\n";
