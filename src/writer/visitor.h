@@ -48,9 +48,9 @@ namespace NanyFromC
 		bool visitParmVarDecl(const clang::ParmVarDecl* decl);
 		bool visitFieldDecl(const clang::FieldDecl* decl);
 		bool visitFunctionDecl(const clang::FunctionDecl* decl);
+		bool visitCXXMethodDecl(const clang::CXXMethodDecl* decl);
 		bool visitCXXConstructorDecl(const clang::CXXConstructorDecl* decl);
 		bool visitCXXDestructorDecl(const clang::CXXDestructorDecl* decl);
-		bool visitCXXMethodDecl(const clang::CXXMethodDecl* decl);
 		bool visitTypedefDecl(const clang::TypedefDecl* decl);
 		//! Visibility specifier
 		bool visitAccessSpecDecl(const clang::AccessSpecDecl* decl);
@@ -78,8 +78,12 @@ namespace NanyFromC
 		bool visitMemberExpr(const clang::MemberExpr* expr);
 		//! Function call
 		bool visitCallExpr(const clang::CallExpr* expr);
+		//! Call to `new`
 		bool visitCXXNewExpr(const clang::CXXNewExpr* expr);
+		//! Call to `delete`
 		bool visitCXXDeleteExpr(const clang::CXXDeleteExpr* expr);
+		//! Indexed array access
+		bool visitArraySubscriptExpr(const clang::ArraySubscriptExpr* expr);
 		//! All unary operators, both prefix or postfix
 		bool visitUnaryOperator(const clang::UnaryOperator* expr);
 		//! All binary operators

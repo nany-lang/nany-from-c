@@ -79,6 +79,8 @@ namespace NanyFromC
 			return visitCXXNewExpr(static_cast<const clang::CXXNewExpr*>(stmt));
 		case clang::Stmt::CXXDeleteExprClass:
 			return visitCXXDeleteExpr(static_cast<const clang::CXXDeleteExpr*>(stmt));
+		case clang::Stmt::ArraySubscriptExprClass:
+			return visitArraySubscriptExpr(static_cast<const clang::ArraySubscriptExpr*>(stmt));
 		case clang::Stmt::UnaryOperatorClass:
 			return visitUnaryOperator(static_cast<const clang::UnaryOperator*>(stmt));
 		case clang::Stmt::BinaryOperatorClass:
@@ -232,7 +234,10 @@ namespace NanyFromC
 			std::cout << ")";
 		}
 		if (not decl->isNoReturn())
-			std::cout << " : " << clang::QualType::getAsString(decl->getReturnType().split());
+		{
+			std::cout << " : ";
+			visitType(decl->getReturnType());
+		}
 		std::cout << '\n' << pIndent << "{\n";
 		++pIndent;
 		if (decl->getBody())
@@ -269,7 +274,10 @@ namespace NanyFromC
 			std::cout << ")";
 		}
 		if (not decl->isNoReturn())
-			std::cout << " : " << clang::QualType::getAsString(decl->getReturnType().split());
+		{
+			std::cout << " : ";
+			visitType(decl->getReturnType());
+		}
 		std::cout << '\n' << pIndent << "{\n";
 		++pIndent;
 		if (not visitDeclContext(decl))
@@ -290,6 +298,9 @@ namespace NanyFromC
 		// Ignore forward declarations
 		if (not decl->isThisDeclarationADefinition())
 			return true;
+		// Do not write empty destructors
+		if ((not decl->hasBody()) || decl->hasTrivialBody())
+			return true;
 
 		std::cout << pIndent << pVisibilities.current() << " func delete\n";
 		std::cout << pIndent << "{\n";
@@ -301,7 +312,6 @@ namespace NanyFromC
 				return false;
 		--pIndent;
 		std::cout << pIndent << "}\n\n";
-		return true;
 		return true;
 	}
 
@@ -384,10 +394,8 @@ namespace NanyFromC
 			return true;
 
 		if (not llvm::isa<clang::CXXRecordDecl>(decl))
-		{
-			std::cout << pIndent;
-			std::cout << "[[C]]\n";
-		}
+			std::cout << pIndent << "[[C]]\n";
+		std::cout << pIndent;
 		if (decl->isInAnonymousNamespace())
 			std::cout << "private ";
 		else
@@ -419,7 +427,10 @@ namespace NanyFromC
 
 	bool NanyConverterVisitor::visitDeclStmt(const clang::DeclStmt* stmt)
 	{
-		return visitDecl(stmt->getSingleDecl());
+		if (stmt->isSingleDecl())
+			return visitDecl(stmt->getSingleDecl());
+		// TODO !
+		return true;
 	}
 
 	bool NanyConverterVisitor::visitReturnStmt(const clang::ReturnStmt* stmt)
@@ -615,6 +626,27 @@ namespace NanyFromC
 		// Manual deletes have no meaning in Nany
 		return true;
 	}
+
+	bool NanyConverterVisitor::visitArraySubscriptExpr(const clang::ArraySubscriptExpr* expr)
+	{
+		pLog.debug() << "ArraySubscriptExpr";
+		if (not expr)
+			return true;
+
+		bool isStmt = pStatementStart;
+		pStatementStart = false;
+		if (isStmt)
+			std::cout << pIndent;
+		visitStmt(expr->getBase());
+		std::cout << '[';
+		visitStmt(expr->getIdx());
+		if (isStmt)
+			std::cout << "];\n";
+		else
+			std::cout << ']';
+		return true;
+	}
+
 
 	bool NanyConverterVisitor::visitUnaryOperator(const clang::UnaryOperator* expr)
 	{
@@ -822,10 +854,10 @@ namespace NanyFromC
 		return true;
 	}
 
-	bool NanyConverterVisitor::visitCharacterLiteral(const clang::CharacterLiteral* stmt)
+	bool NanyConverterVisitor::visitCharacterLiteral(const clang::CharacterLiteral* expr)
 	{
 		pLog.debug() << "CharacterLiteral";
-		char c = static_cast<char>(stmt->getValue());
+		char c = static_cast<char>(expr->getValue());
 		std::cout << '\'';
 		switch (c)
 		{
@@ -870,25 +902,25 @@ namespace NanyFromC
 		return true;
 	}
 
-	bool NanyConverterVisitor::visitStringLiteral(const clang::StringLiteral* stmt)
+	bool NanyConverterVisitor::visitStringLiteral(const clang::StringLiteral* expr)
 	{
 		pLog.debug() << "StringLiteral";
-		std::cout << '"' << stmt->getString().data() << '"';
+		std::cout << '"' << expr->getString().data() << '"';
 		return true;
 	}
 
-	bool NanyConverterVisitor::visitIntegerLiteral(const clang::IntegerLiteral* stmt)
+	bool NanyConverterVisitor::visitIntegerLiteral(const clang::IntegerLiteral* expr)
 	{
 		pLog.debug() << "IntegerLiteral";
-		std::cout << *(stmt->getValue().getRawData());
+		std::cout << *(expr->getValue().getRawData());
 		return true;
 	}
 
-	bool NanyConverterVisitor::visitFloatingLiteral(const clang::FloatingLiteral* stmt)
+	bool NanyConverterVisitor::visitFloatingLiteral(const clang::FloatingLiteral* expr)
 	{
 		pLog.debug() << "FloatingLiteral";
 		llvm::SmallVector<char, 32> dest;
-		stmt->getValue().toString(dest);
+		expr->getValue().toString(dest);
 		// TODO : discriminate 32 / 64
 		std::cout << std::string(dest.begin(), dest.end()) << "f32";
 		return true;
@@ -912,6 +944,8 @@ namespace NanyFromC
 	bool NanyConverterVisitor::visitType(const clang::QualType& type)
 	{
 		pLog.debug() << "QualType";
+		if (not type.getTypePtr())
+			return true;
 		std::cout << convertType(type.getTypePtr());
 		return true;
 	}

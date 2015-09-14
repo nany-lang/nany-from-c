@@ -24,7 +24,7 @@ namespace NanyFromC
 			pError = "File not found";
 			return false;
 		}
-
+/*
 		const char* argv[2] = {
 			"nany-from-c",
 			pFilePath.data()
@@ -33,7 +33,7 @@ namespace NanyFromC
 		clang::tooling::CommonOptionsParser optionParser(argc, argv, NanyToolCategory);
 		clang::tooling::ClangTool tool(
 			optionParser.getCompilations(), optionParser.getSourcePathList());
-
+*/
 		//int result = tool.run(
 		//	clang::tooling::newFrontendActionFactory<clang::SyntaxOnlyAction>().get());
 		//return 0 != tool.run(clang::tooling::newFrontendActionFactory<NanyConverterFrontendAction>().get());
