@@ -17,5 +17,5 @@ struct A
 int main()
 {
 	A a(24);
-	return A(a).value;
+	return *(A(a).value);
 }

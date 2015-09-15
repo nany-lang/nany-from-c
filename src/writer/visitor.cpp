@@ -42,7 +42,7 @@ namespace NanyFromC
 		case clang::Decl::EnumConstant:
 			return visitEnumConstantDecl(static_cast<const clang::EnumConstantDecl*>(decl));
 		default:
-			std::cerr << "Node \"" << decl->getDeclKindName() << "\" is not yet implemented !" << std::endl;
+			pLog.error() << "Node \"" << decl->getDeclKindName() << "\" is not yet implemented !";
 			return true;
 		}
 		return true;
@@ -56,6 +56,9 @@ namespace NanyFromC
 		switch (stmt->getStmtClass())
 		{
 		case clang::Stmt::NoStmtClass:
+			break;
+		case clang::Stmt::NullStmtClass:
+			return visitNullStmt(static_cast<const clang::NullStmt*>(stmt));
 			break;
 		case clang::Stmt::DeclStmtClass:
 			return visitDeclStmt(static_cast<const clang::DeclStmt*>(stmt));
@@ -79,6 +82,8 @@ namespace NanyFromC
 			return visitCXXNewExpr(static_cast<const clang::CXXNewExpr*>(stmt));
 		case clang::Stmt::CXXDeleteExprClass:
 			return visitCXXDeleteExpr(static_cast<const clang::CXXDeleteExpr*>(stmt));
+		case clang::Stmt::ExprWithCleanupsClass:
+			return visitExprWithCleanups(static_cast<const clang::ExprWithCleanups*>(stmt));
 		case clang::Stmt::ArraySubscriptExprClass:
 			return visitArraySubscriptExpr(static_cast<const clang::ArraySubscriptExpr*>(stmt));
 		case clang::Stmt::UnaryOperatorClass:
@@ -110,7 +115,7 @@ namespace NanyFromC
 		case clang::Stmt::FloatingLiteralClass:
 			return visitFloatingLiteral(static_cast<const clang::FloatingLiteral*>(stmt));
 		default:
-			std::cerr << "Node \"" << stmt->getStmtClassName() << "\" is not yet implemented !" << std::endl;
+			pLog.error() << "Node \"" << stmt->getStmtClassName() << "\" is not yet implemented !";
 			return true;
 		}
 		return true;
@@ -196,7 +201,8 @@ namespace NanyFromC
 		pLog.debug() << "ParmVarDecl";
 		if (not decl)
 			return true;
-		std::cout << decl->getNameAsString();
+		std::cout << decl->getNameAsString() << ": ";
+		visitType(decl->getType());
 		return true;
 	}
 
@@ -425,8 +431,17 @@ namespace NanyFromC
 		return visitRealStmtType(stmt);
 	}
 
+	bool NanyConverterVisitor::visitNullStmt(const clang::Stmt* stmt)
+	{
+		pLog.debug() << "NullStmt";
+		pStatementStart = false;
+		return true;
+	}
+
 	bool NanyConverterVisitor::visitDeclStmt(const clang::DeclStmt* stmt)
 	{
+		pLog.debug() << "DeclStmt";
+		pStatementStart = false;
 		if (stmt->isSingleDecl())
 			return visitDecl(stmt->getSingleDecl());
 		// TODO !
@@ -435,8 +450,8 @@ namespace NanyFromC
 
 	bool NanyConverterVisitor::visitReturnStmt(const clang::ReturnStmt* stmt)
 	{
-		pStatementStart = false;
 		pLog.debug() << "ReturnStmt";
+		pStatementStart = false;
 		std::cout << pIndent;
 		std::cout << "return ";
 		visitStmt(stmt->getRetValue());
@@ -520,8 +535,9 @@ namespace NanyFromC
 		if (not stmt)
 			return true;
 
-		pStatementStart = false;
+		pStatementStart = true;
 		visitStmt(stmt->getInit());
+		pStatementStart = false;
 		std::cout << pIndent << "while ";
 		if (stmt->getConditionVariableDeclStmt())
 			visitStmt(stmt->getConditionVariableDeclStmt());
@@ -627,6 +643,15 @@ namespace NanyFromC
 		return true;
 	}
 
+	bool NanyConverterVisitor::visitExprWithCleanups(const clang::ExprWithCleanups* expr)
+	{
+		pLog.debug() << "ExprWithCleanups";
+		if (not expr)
+			return true;
+		// TODO : Manage object inits
+		return visitStmt(expr->getSubExpr());
+	}
+
 	bool NanyConverterVisitor::visitArraySubscriptExpr(const clang::ArraySubscriptExpr* expr)
 	{
 		pLog.debug() << "ArraySubscriptExpr";
@@ -656,6 +681,9 @@ namespace NanyFromC
 
 		bool isStmt = pStatementStart;
 		pStatementStart = false;
+		if (isStmt)
+			std::cout << pIndent;
+
 		const char* op = "";
 		switch (expr->getOpcode())
 		{
@@ -677,18 +705,26 @@ namespace NanyFromC
 			case clang::UO_LNot:
 				op = "not ";
 				break;
-			// UO_AddrOf (&), UO_Deref (*), ...
+			// operator *
+			case clang::UO_Deref:
+				// special case : write immediately
+				std::cout << "std.c.ptrValue(";
+				visitStmt(expr->getSubExpr());
+				std::cout << ')';
+				break;
+			// UO_AddrOf (&)
 			default:
 				pLog.error() << "Unary operator is not yet implemented : \'" << clang::UnaryOperator::getOpcodeStr(expr->getOpcode()).data() << '\'';
 				break;
 		}
-		if (isStmt)
-			std::cout << pIndent;
-		if (not expr->isPostfix())
-			std::cout << op;
-		visitStmt(expr->getSubExpr());
-		if (expr->isPostfix())
-			std::cout << op;
+		if (*op) // check that the operator is not empty
+		{
+			if (not expr->isPostfix())
+				std::cout << op;
+			visitStmt(expr->getSubExpr());
+			if (expr->isPostfix())
+				std::cout << op;
+		}
 		if (isStmt)
 			std::cout << ";\n";
 		return true;
@@ -724,7 +760,7 @@ namespace NanyFromC
 		case clang::BO_Shl:
 		case clang::BO_Shr:
 		case clang::BO_Comma:
-			std::cerr << "Binary operator \"" << expr->getOpcodeStr().data() << "\" is not yet implemented";
+			pLog.error() << "Binary operator \"" << expr->getOpcodeStr().data() << "\" is not yet implemented";
 			return true;
 		default:
 			// All other binary operators are the same in Nany and can be copied directly
@@ -808,19 +844,37 @@ namespace NanyFromC
 
 	bool NanyConverterVisitor::visitCastExpr(const clang::CastExpr* expr)
 	{
-		if (clang::CK_LValueToRValue == expr->getCastKind())
+		pLog.debug() << "CastExpr : <" << expr->getCastKindName() << '>';
+		switch (expr->getCastKind())
 		{
-			// Ignore the cast when possible
+		// Ignore the cast when possible
+		case clang::CK_LValueToRValue:
+		case clang::CK_IntegralCast:
+		case clang::CK_DerivedToBase:
+		case clang::CK_ArrayToPointerDecay:
+		case clang::CK_NoOp:
 			visitStmt(expr->getSubExpr());
-		}
-		else
-		{
-			// In the default case, use the copy constructor to cast
-			std::cout << "new ";
+			break;
+		case clang::CK_IntegralToBoolean:
+		case clang::CK_FloatingToBoolean:
+			visitStmt(expr->getSubExpr());
+			std::cout << " != 0";
+			break;
+		case clang::CK_PointerToBoolean:
+		case clang::CK_MemberPointerToBoolean:
+			visitStmt(expr->getSubExpr());
+			std::cout << " != null";
+			break;
+		case clang::CK_NullToPointer:
+			std::cout << "null";
+			break;
+		// In the default case, use compiler intrinsics to cast
+		default:
 			visitType(expr->getType());
 			std::cout << "(";
 			visitStmt(expr->getSubExpr());
 			std::cout << ")";
+			break;
 		}
 		return true;
 	}
@@ -894,6 +948,9 @@ namespace NanyFromC
 			case '\?':
 				std::cout << "\\\?";
 				break;
+			case '\0':
+				std::cout << "\\0";
+				break;
 			default:
 				std::cout << c;
 				break;
@@ -921,8 +978,8 @@ namespace NanyFromC
 		pLog.debug() << "FloatingLiteral";
 		llvm::SmallVector<char, 32> dest;
 		expr->getValue().toString(dest);
-		// TODO : discriminate 32 / 64
-		std::cout << std::string(dest.begin(), dest.end()) << "f32";
+		auto size = typeSize(expr->getType());
+		std::cout << std::string(dest.begin(), dest.end()) << 'f' << size;
 		return true;
 	}
 
@@ -959,33 +1016,49 @@ namespace NanyFromC
 	{
 		if (type->isScalarType())
 		{
-			// Get the type size in bits
-			clang::TypeInfo typeInfo = pContext->getTypeInfo(type);
-    		uint64_t typeSize = typeInfo.Width; // in bits
-
 			switch (type->getScalarTypeKind())
 			{
 				case clang::Type::STK_Bool:
-					return "__bool";
+					return "std.c.bool";
 				case clang::Type::STK_Integral:
-					return Yuni::String(type->isSignedIntegerType()	? "__i" : "__u") << typeSize;
+					return Yuni::String(type->isSignedIntegerType()	? "std.c.int" : "std.c.uint") << typeSize(type);
 				case clang::Type::STK_Floating:
-					return Yuni::String("__f") << typeSize;
-				case clang::Type::STK_IntegralComplex:
-					return "std.cplx<__i32>";
-				case clang::Type::STK_FloatingComplex:
-					return "std.cplx<__f32>";
+					return Yuni::String("std.c.float") << typeSize(type);
 				case clang::Type::STK_CPointer:
-					return Yuni::String("__pointer<") << convertType(type->getPointeeType()) << '>';
+				{
+					const auto& subType = type->getPointeeType();
+					// int8 is char, so consider int8* as a string
+					if (subType->isSignedIntegerType() and 8 == typeSize(subType))
+						return "std.c.cstr";
+					return Yuni::String("std.c.ptr<") << convertType(type->getPointeeType()) << '>';
+				}
 				case clang::Type::STK_BlockPointer:
 				case clang::Type::STK_ObjCObjectPointer:
 				case clang::Type::STK_MemberPointer:
+				case clang::Type::STK_IntegralComplex:
+				case clang::Type::STK_FloatingComplex:
 				default:
 					std::cerr << "Unmanaged Scalar kind for type \"" << type->getTypeClassName() << "\"" << std::endl;
 					return type->getTypeClassName();
 			}
 		}
 		return type->getTypeClassName();
+	}
+
+	uint64_t NanyConverterVisitor::typeSize(const clang::QualType& type) const
+	{
+		return typeSize(type.getTypePtr());
+	}
+
+	uint64_t NanyConverterVisitor::typeSize(const clang::Type* type) const
+	{
+		clang::TypeInfo typeInfo = pContext->getTypeInfo(type);
+    	return typeInfo.Width; // in bits
+	}
+
+	bool NanyConverterVisitor::isPtrType(const clang::Expr* expr) const
+	{
+		return expr->getType()->isScalarType() && clang::Type::STK_CPointer == expr->getType()->getScalarTypeKind();
 	}
 
 

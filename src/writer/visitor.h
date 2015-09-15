@@ -65,6 +65,8 @@ namespace NanyFromC
 
 		//! Default behaviour for statements (and exprs)
 		bool visitStmt(const clang::Stmt* stmt);
+		//! Empty statement ";"
+		bool visitNullStmt(const clang::Stmt* stmt);
 		bool visitDeclStmt(const clang::DeclStmt* stmt);
 		bool visitReturnStmt(const clang::ReturnStmt* stmt);
 		bool visitIfStmt(const clang::IfStmt* stmt);
@@ -82,6 +84,8 @@ namespace NanyFromC
 		bool visitCXXNewExpr(const clang::CXXNewExpr* expr);
 		//! Call to `delete`
 		bool visitCXXDeleteExpr(const clang::CXXDeleteExpr* expr);
+		//! Special expression that initializes short-life objects
+		bool visitExprWithCleanups(const clang::ExprWithCleanups* expr);
 		//! Indexed array access
 		bool visitArraySubscriptExpr(const clang::ArraySubscriptExpr* expr);
 		//! All unary operators, both prefix or postfix
@@ -116,6 +120,12 @@ namespace NanyFromC
 
 		Yuni::String convertType(const clang::QualType& type) const;
 		Yuni::String convertType(const clang::Type* type) const;
+
+		//! Get the type size in bits
+		uint64_t typeSize(const clang::Type* type) const;
+		uint64_t typeSize(const clang::QualType& type) const;
+		//! Is a given expression of pointer type ?
+		bool isPtrType(const clang::Expr* expr) const;
 
 	private:
 		//! AST Context holds additional separate information about the AST
