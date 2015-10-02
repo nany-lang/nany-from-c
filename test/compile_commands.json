@@ -1,22 +1,42 @@
 [
 	{
 		"directory": "/home/nitrous/code/nany-from-c/test",
-		"command": "/usr/bin/gcc -Wall -Wextra -W -std=c99 -I. -DNDEBUG -DPOSIX -c -o glew.o glew.c",
+		"command": "/usr/bin/gcc -Wall -Wextra -W -std=c11 -I. -DNDEBUG -DPOSIX -c -o glew.o glew.c",
 		"file": "glew.c"
 	},
 	{
+		"directory": "/home/nitrous/code/libyuni/src/yuni/core/process/program",
+		"command": "/usr/bin/g++ -I. -I../../libyuni/src/yuni -I../../libyuni/src/yuni/core/process/program -Wall -Wextra -W -std=gnu++14 -I. -DNDEBUG -DPOSIX -c -o program.o program.cpp",
+		"file": "program.cpp"
+	},
+	{
 		"directory": "/home/nitrous/code/nany-from-c/test",
-		"command": "/usr/bin/gcc -Wall -Wextra -W -std=c99 -I. -DNDEBUG -DPOSIX -c -o empty_main.o empty_main.c",
+		"command": "/usr/bin/gcc -Wall -Wextra -W -std=c11 -I. -DNDEBUG -DPOSIX -c -o empty_main.o empty_main.c",
 		"file": "empty_main.c"
 	},
 	{
 		"directory": "/home/nitrous/code/nany-from-c/test",
-		"command": "/usr/bin/g++ -Wall -Wextra -W -std=c++11 -I. -DNDEBUG -DPOSIX -c -o classes.o classes.cpp",
+		"command": "/usr/bin/g++ -Wall -Wextra -W -std=gnu++14 -I. -DNDEBUG -DPOSIX -c -o classes.o classes.cpp",
 		"file": "classes.cpp"
 	},
 	{
 		"directory": "/home/nitrous/code/nany-from-c/test",
 		"command": "/usr/bin/gcc -Wall -Wextra -W -std=c11 -I. -DNDEBUG -DPOSIX -c -o vardecl.o vardecl.c",
 		"file": "vardecl.c"
+	},
+	{
+		"directory": "/home/nitrous/code/nany-from-c/test",
+		"command": "/usr/bin/gcc -Wall -Wextra -W -std=gnu++14 -I. -DNDEBUG -DPOSIX -c -o conditional.o conditional.cpp",
+		"file": "conditional.cpp"
+	},
+	{
+		"directory": "/home/nitrous/code/nany-from-c/test",
+		"command": "/usr/bin/g++ -Wall -Wextra -W -std=gnu++14 -I. -DNDEBUG -DPOSIX -c -o class.o class.cpp",
+		"file": "class.cpp"
+	},
+	{
+		"directory": "/home/nitrous/code/nany-from-c/test",
+		"command": "/usr/bin/g++ -Wall -Wextra -W -std=gnu++14 -I. -DNDEBUG -DPOSIX -c -o new.o new.cpp",
+		"file": "new.cpp"
 	}
 ]

@@ -463,13 +463,14 @@ namespace NanyFromC
 	{
 		pLog.debug() << "IfStmt";
 		pStatementStart = false;
-		std::cout << pIndent << "if ";
+		bool hasInlineVardecl = nullptr != stmt->getConditionVariableDeclStmt();
 		// An if statement may declare a variable :
-		if (stmt->getConditionVariableDeclStmt())
+		if (hasInlineVardecl)
 		{
+			std::cout << pIndent++ << "{\n";
 			visitStmt(stmt->getConditionVariableDeclStmt());
-			std::cout << " ";
 		}
+		std::cout << pIndent << "if ";
 		visitStmt(stmt->getCond());
 		std::cout << " then\n";
 		if (!llvm::isa<clang::CompoundStmt>(stmt->getThen()))
@@ -478,6 +479,7 @@ namespace NanyFromC
 			++pIndent;
 			visitStmt(stmt->getThen());
 			--pIndent;
+			pStatementStart = false;
 		}
 		else
 		{
@@ -494,7 +496,11 @@ namespace NanyFromC
 			visitStmt(stmt->getElse());
 			--pIndent;
 		}
-		pStatementStart = false;
+		if (hasInlineVardecl)
+		{
+			--pIndent;
+			std::cout << pIndent << "}\n";
+		}
 		return true;
 	}
 
@@ -505,9 +511,15 @@ namespace NanyFromC
 			return true;
 
 		pStatementStart = false;
-		std::cout << pIndent << "while ";
-		if (stmt->getConditionVariableDeclStmt())
+		bool hasInlineVardecl = nullptr != stmt->getConditionVariableDeclStmt();
+		// A while statement may declare a variable :
+		if (hasInlineVardecl)
+		{
+			std::cout << pIndent++ << "{\n";
 			visitStmt(stmt->getConditionVariableDeclStmt());
+		}
+
+		std::cout << pIndent << "while ";
 		visitStmt(stmt->getCond());
 		std::cout << " do\n";
 		if (!llvm::isa<clang::CompoundStmt>(stmt->getBody()))
@@ -525,6 +537,8 @@ namespace NanyFromC
 			--pIndent;
 			std::cout << pIndent << "}\n";
 		}
+		if (hasInlineVardecl)
+			std::cout << --pIndent << "}\n";
 		pStatementStart = false;
 		return true;
 	}
@@ -535,12 +549,16 @@ namespace NanyFromC
 		if (not stmt)
 			return true;
 
+		std::cout << pIndent++ << "{\n";
+		bool hasInlineVardecl = nullptr != stmt->getConditionVariableDeclStmt();
+		// A while statement may declare a variable :
+		if (hasInlineVardecl)
+			visitStmt(stmt->getConditionVariableDeclStmt());
 		pStatementStart = true;
 		visitStmt(stmt->getInit());
 		pStatementStart = false;
+
 		std::cout << pIndent << "while ";
-		if (stmt->getConditionVariableDeclStmt())
-			visitStmt(stmt->getConditionVariableDeclStmt());
 		visitStmt(stmt->getCond());
 		std::cout << " do\n";
 		if (!llvm::isa<clang::CompoundStmt>(stmt->getBody()) && stmt->getInc() == nullptr)
