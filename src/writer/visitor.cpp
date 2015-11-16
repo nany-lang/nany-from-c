@@ -70,6 +70,8 @@ namespace NanyFromC
 			return visitIfStmt(static_cast<const clang::IfStmt*>(stmt));
 		case clang::Stmt::WhileStmtClass:
 			return visitWhileStmt(static_cast<const clang::WhileStmt*>(stmt));
+		case clang::Stmt::DoStmtClass:
+			return visitDoStmt(static_cast<const clang::DoStmt*>(stmt));
 		case clang::Stmt::ForStmtClass:
 			return visitForStmt(static_cast<const clang::ForStmt*>(stmt));
 		case clang::Stmt::DeclRefExprClass:
@@ -543,6 +545,34 @@ namespace NanyFromC
 		return true;
 	}
 
+	bool NanyConverterVisitor::visitDoStmt(const clang::DoStmt* stmt)
+	{
+		pLog.debug() << "DoStmt";
+		if (not stmt)
+			return true;
+
+		std::cout << pIndent << "do\n";
+		if (not llvm::isa<clang::CompoundStmt>(stmt->getBody()))
+		{
+			pStatementStart = true;
+			++pIndent;
+			visitStmt(stmt->getBody());
+			--pIndent;
+		}
+		else
+		{
+			std::cout << pIndent << "{\n";
+			++pIndent;
+			visitStmt(stmt->getBody());
+			--pIndent;
+			std::cout << pIndent << "}\n";
+		}
+		std::cout << pIndent << "while ";
+		visitStmt(stmt->getCond());
+		std::cout << ";\n";
+		return true;
+	}
+
 	bool NanyConverterVisitor::visitForStmt(const clang::ForStmt* stmt)
 	{
 		pLog.debug() << "ForStmt";
@@ -625,16 +655,23 @@ namespace NanyFromC
 		if (not expr)
 			return true;
 
+		bool isStmt = pStatementStart;
+		pStatementStart = false;
+		if (isStmt)
+			std::cout << pIndent;
 		if (expr->getCallee() != nullptr)
 			std::cout << expr->getCalleeDecl()->getAsFunction()->getNameAsString() << '(';
 		uint i = 0;
 		for (const auto& arg : expr->arguments())
 		{
 			visitStmt(arg);
-			if (i++ + 1 < expr->getNumArgs())
+			if (++i < expr->getNumArgs())
 				std::cout << ", ";
 		}
-		std::cout << ")";
+		if (isStmt)
+			std::cout << ");\n";
+		else
+			std::cout << ")";
 		return true;
 	}
 

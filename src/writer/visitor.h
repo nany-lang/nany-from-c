@@ -71,6 +71,7 @@ namespace NanyFromC
 		bool visitReturnStmt(const clang::ReturnStmt* stmt);
 		bool visitIfStmt(const clang::IfStmt* stmt);
 		bool visitWhileStmt(const clang::WhileStmt* stmt);
+		bool visitDoStmt(const clang::DoStmt* stmt);
 		bool visitForStmt(const clang::ForStmt* stmt);
 		bool visitCompoundStmt(const clang::CompoundStmt* stmt);
 
