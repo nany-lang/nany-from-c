@@ -475,7 +475,7 @@ namespace NanyFromC
 		std::cout << pIndent << "if ";
 		visitStmt(stmt->getCond());
 		std::cout << " then\n";
-		if (!llvm::isa<clang::CompoundStmt>(stmt->getThen()))
+		if (not llvm::isa<clang::CompoundStmt>(stmt->getThen()))
 		{
 			pStatementStart = true;
 			++pIndent;
@@ -494,9 +494,21 @@ namespace NanyFromC
 		if (stmt->getElse())
 		{
 			std::cout << pIndent << "else\n";
-			++pIndent;
-			visitStmt(stmt->getElse());
-			--pIndent;
+			if (not llvm::isa<clang::CompoundStmt>(stmt->getThen()))
+			{
+				pStatementStart = true;
+				++pIndent;
+				visitStmt(stmt->getElse());
+				--pIndent;
+				pStatementStart = false;
+			}
+			else
+			{
+				std::cout << pIndent << "else\n";
+				++pIndent;
+				visitStmt(stmt->getElse());
+				--pIndent;
+			}
 		}
 		if (hasInlineVardecl)
 		{
@@ -812,9 +824,6 @@ namespace NanyFromC
 			break;
 		case clang::BO_PtrMemD:
 		case clang::BO_PtrMemI:
-		case clang::BO_Shl:
-		case clang::BO_Shr:
-		case clang::BO_Comma:
 			pLog.error() << "Binary operator \"" << expr->getOpcodeStr().data() << "\" is not yet implemented";
 			return true;
 		default:
