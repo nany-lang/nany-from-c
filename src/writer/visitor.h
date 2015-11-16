@@ -73,6 +73,8 @@ namespace NanyFromC
 		bool visitWhileStmt(const clang::WhileStmt* stmt);
 		bool visitDoStmt(const clang::DoStmt* stmt);
 		bool visitForStmt(const clang::ForStmt* stmt);
+		bool visitBreakStmt(const clang::BreakStmt* stmt);
+		bool visitContinueStmt(const clang::ContinueStmt* stmt);
 		bool visitCompoundStmt(const clang::CompoundStmt* stmt);
 
 		//! Variable use

@@ -74,6 +74,10 @@ namespace NanyFromC
 			return visitDoStmt(static_cast<const clang::DoStmt*>(stmt));
 		case clang::Stmt::ForStmtClass:
 			return visitForStmt(static_cast<const clang::ForStmt*>(stmt));
+		case clang::Stmt::BreakStmtClass:
+			return visitBreakStmt(static_cast<const clang::BreakStmt*>(stmt));
+		case clang::Stmt::ContinueStmtClass:
+			return visitContinueStmt(static_cast<const clang::ContinueStmt*>(stmt));
 		case clang::Stmt::DeclRefExprClass:
 			return visitDeclRefExpr(static_cast<const clang::DeclRefExpr*>(stmt));
 		case clang::Stmt::MemberExprClass:
@@ -621,6 +625,26 @@ namespace NanyFromC
 			std::cout << pIndent << "}\n";
 		}
 		pStatementStart = false;
+		return true;
+	}
+
+	bool NanyConverterVisitor::visitBreakStmt(const clang::BreakStmt* stmt)
+	{
+		pLog.debug() << "BreakStmt";
+		if (not stmt)
+			return true;
+
+		std::cout << pIndent << "break;\n";
+		return true;
+	}
+
+	bool NanyConverterVisitor::visitContinueStmt(const clang::ContinueStmt* stmt)
+	{
+		pLog.debug() << "ContinueStmt";
+		if (not stmt)
+			return true;
+
+		std::cout << pIndent << "continue;\n";
 		return true;
 	}
 
