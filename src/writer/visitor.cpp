@@ -498,7 +498,7 @@ namespace NanyFromC
 		if (stmt->getElse())
 		{
 			std::cout << pIndent << "else\n";
-			if (not llvm::isa<clang::CompoundStmt>(stmt->getThen()))
+			if (not llvm::isa<clang::CompoundStmt>(stmt->getElse()))
 			{
 				pStatementStart = true;
 				++pIndent;
@@ -508,10 +508,11 @@ namespace NanyFromC
 			}
 			else
 			{
-				std::cout << pIndent << "else\n";
+				std::cout << pIndent << "{\n";
 				++pIndent;
 				visitStmt(stmt->getElse());
 				--pIndent;
+				std::cout << pIndent << "}\n";
 			}
 		}
 		if (hasInlineVardecl)
