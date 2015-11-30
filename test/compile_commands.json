@@ -38,5 +38,10 @@
 		"directory": "/home/nitrous/code/nany-from-c/test",
 		"command": "/usr/bin/g++ -Wall -Wextra -W -std=gnu++14 -I. -DNDEBUG -DPOSIX -c -o new.o new.cpp",
 		"file": "new.cpp"
+	},
+	{
+		"directory": "/home/nitrous/code/nany-from-c/test",
+		"command": "/usr/bin/gcc -Wall -Wextra -W -std=gnu14 -I. -DNDEBUG -DPOSIX -c -o typedefstruct.o typedefstruct.c",
+		"file": "typedefstruct.c"
 	}
 ]

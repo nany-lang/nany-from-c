@@ -17,10 +17,12 @@ namespace NanyFromC
 			, pIndentSize(indentSize)
 			, pLevel(0u)
 		{}
+
 		Indenter(const Indenter& other) = default;
-		Indenter(Indenter&& other) = default;
 		Indenter& operator = (const Indenter& other) = default;
-		Indenter& operator = (Indenter&& other) = default;
+
+		//! Current indent level
+		uint level() const { return pLevel; }
 
 		void print(std::ostream& out) const
 		{
@@ -33,18 +35,19 @@ namespace NanyFromC
 		//! Increase indent level (postfix)
 		Indenter operator++(int)
 		{
-			Indenter temp = *this;
-   			++*this;
+			Indenter temp(*this);
+   			++pLevel;
    			return temp;
 		}
 
 		//! Decrease indent level (prefix)
-		Indenter& operator--() { --pLevel; return *this; }
+		Indenter& operator--() { if (pLevel > 0u) --pLevel; return *this; }
 		//! Decrease indent level (postfix)
 		Indenter operator--(int)
 		{
-			Indenter temp = *this;
-   			--*this;
+			Indenter temp(*this);
+			if (pLevel > 0u)
+   				--pLevel;
    			return temp;
 		}
 

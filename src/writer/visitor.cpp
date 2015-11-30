@@ -217,8 +217,8 @@ namespace NanyFromC
 		pLog.debug() << "FieldDecl";
 		if (not decl)
 			return true;
-		std::cout << pIndent << pVisibilities.current()
-			<< (decl->getType().isConstant(*pContext) ? " const " : " var ")
+		std::cout << pIndent
+			<< (decl->getType().isConstant(*pContext) ? "const " : "var ")
 			<< decl->getNameAsString() << ";\n";
 		return true;
 	}
@@ -232,7 +232,7 @@ namespace NanyFromC
 		if (not decl->isThisDeclarationADefinition())
 			return true;
 
-		std::cout << pIndent << pVisibilities.current() << " func " << decl->getNameAsString();
+		std::cout << pIndent << "func " << decl->getNameAsString();
 		if (decl->param_size() > 0)
 		{
 			uint i = 0;
@@ -272,7 +272,7 @@ namespace NanyFromC
 		if (decl->isDefaultConstructor())
 			return true;
 
-		std::cout << pIndent << pVisibilities.current() << " func new";
+		std::cout << pIndent << "func new";
 		if (decl->param_size() > 0)
 		{
 			uint i = 0;
@@ -314,7 +314,7 @@ namespace NanyFromC
 		if ((not decl->hasBody()) || decl->hasTrivialBody())
 			return true;
 
-		std::cout << pIndent << pVisibilities.current() << " func delete\n";
+		std::cout << pIndent << "func delete\n";
 		std::cout << pIndent << "{\n";
 		++pIndent;
 		if (not visitDeclContext(decl))
@@ -352,13 +352,16 @@ namespace NanyFromC
 		switch (decl->getAccess())
 		{
 			case clang::AS_public:
-				pVisibilities.current(Visibility::vPublic);
+				std::cout << --pIndent << "public:\n";
+				++pIndent;
 				break;
 			case clang::AS_protected:
-				pVisibilities.current(Visibility::vProtected);
+				std::cout << --pIndent << "protected:\n";
+				++pIndent;
 				break;
 			case clang::AS_private:
-				pVisibilities.current(Visibility::vPrivate);
+				std::cout << --pIndent << "private:\n";
+				++pIndent;
 				break;
 			default:
 				break;
@@ -372,7 +375,7 @@ namespace NanyFromC
 		if (not decl)
 			return true;
 
-		std::cout << pIndent << pVisibilities.current() << " enum " << decl->getNameAsString() << '\n';
+		std::cout << pIndent << "enum " << decl->getNameAsString() << '\n';
 		std::cout << pIndent << "{\n";
 		++pIndent;
 		visitDeclContext(decl);
@@ -416,10 +419,7 @@ namespace NanyFromC
 			<< decl->getDefinition()->getNameAsString()
 			<< '\n' << pIndent << "{\n";
 		++pIndent;
-		// Default visibility in classes is Public
-		pVisibilities.push(Visibility::vPublic);
 		visitDeclContext(decl);
-		pVisibilities.pop();
 		--pIndent;
 		std::cout << pIndent << "}\n";
 		return true;

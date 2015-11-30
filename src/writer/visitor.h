@@ -6,7 +6,6 @@
 #include <clang/Frontend/FrontendActions.h>
 #include <clang/AST/RecursiveASTVisitor.h>
 #include "indenter.h"
-#include "visibilitystack.h"
 
 
 namespace NanyFromC
@@ -140,8 +139,6 @@ namespace NanyFromC
 		Yuni::Logs::Logger<> pLog;
 		//! Indenting management
 		Indenter pIndent;
-		//! Stack of current visibilities by scope
-		VisibilityStack pVisibilities;
 		//! Use this to mark when a future simple expression is actually used as a statement
 		bool pStatementStart;
 
