@@ -1,1 +1,3 @@
 * C-style typedef'ed named structs are not managed properly
+* There is a bug with the Indenter's post-increment / post-decrement operators. They do the work twice...
+* new array creation is broken

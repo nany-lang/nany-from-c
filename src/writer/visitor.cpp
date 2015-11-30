@@ -245,18 +245,32 @@ namespace NanyFromC
 			}
 			std::cout << ")";
 		}
-		if (not decl->isNoReturn())
+		if (llvm::isa<clang::CompoundStmt>(decl->getBody()) &&
+			llvm::isa<clang::ReturnStmt>(static_cast<clang::CompoundStmt*>(decl->getBody())->body_begin()[0]))
 		{
-			std::cout << " : ";
-			visitType(decl->getReturnType());
+			// -> notation for inline return
+			std::cout << " -> ";
+			auto* returnStmt = static_cast<clang::ReturnStmt*>(static_cast<clang::CompoundStmt*>(decl->getBody())->body_begin()[0]);
+			visitStmt(returnStmt->getRetValue());
+			std::cout << ";\n\n";
 		}
-		std::cout << '\n' << pIndent << "{\n";
-		++pIndent;
-		if (decl->getBody())
-			if (not visitStmt(decl->getBody()))
-				return false;
-		--pIndent;
-		std::cout << pIndent << "}\n\n";
+		else
+		{
+			// Typing
+			if (not decl->isNoReturn())
+			{
+				std::cout << " : ";
+				visitType(decl->getReturnType());
+			}
+			// Body
+			std::cout << '\n' << pIndent << "{\n";
+			++pIndent;
+			if (decl->getBody())
+				if (not visitStmt(decl->getBody()))
+					return false;
+			--pIndent;
+			std::cout << pIndent << "}\n\n";
+		}
 		return true;
 	}
 
