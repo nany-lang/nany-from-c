@@ -1,3 +1,2 @@
 * C-style typedef'ed named structs are not managed properly
 * Manage visibility scopes instead of specifying visibility on each member
-* Manage escape sequeneces in strings (currently only done for single chars)

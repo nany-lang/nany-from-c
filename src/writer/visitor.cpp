@@ -997,11 +997,8 @@ namespace NanyFromC
 		return true;
 	}
 
-	bool NanyConverterVisitor::visitCharacterLiteral(const clang::CharacterLiteral* expr)
+	void NanyConverterVisitor::writeCharacter(char c)
 	{
-		pLog.debug() << "CharacterLiteral";
-		char c = static_cast<char>(expr->getValue());
-		std::cout << '\'';
 		switch (c)
 		{
 			case '\a':
@@ -1044,6 +1041,13 @@ namespace NanyFromC
 				std::cout << c;
 				break;
 		}
+	}
+
+	bool NanyConverterVisitor::visitCharacterLiteral(const clang::CharacterLiteral* expr)
+	{
+		pLog.debug() << "CharacterLiteral";
+		std::cout << '\'';
+		writeCharacter(static_cast<char>(expr->getValue()));
 		std::cout << '\'';
 		return true;
 	}
@@ -1051,7 +1055,10 @@ namespace NanyFromC
 	bool NanyConverterVisitor::visitStringLiteral(const clang::StringLiteral* expr)
 	{
 		pLog.debug() << "StringLiteral";
-		std::cout << '"' << expr->getString().data() << '"';
+		std::cout << '"';
+		for (uint i = 0; i < expr->getString().size(); ++i)
+			writeCharacter(expr->getString().data()[i]);
+		std::cout << '"';
 		return true;
 	}
 

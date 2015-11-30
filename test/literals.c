@@ -8,5 +8,6 @@ int main()
 	double dd = f;
 	char c = '\t';
 	char* str = "Hello";
+	char* escapes = "\t\r\n\a\b\f\v\\\'\"\?\0";
 	return 0;
 }

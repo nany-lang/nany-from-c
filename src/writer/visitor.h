@@ -130,6 +130,9 @@ namespace NanyFromC
 		//! Is a given expression of pointer type ?
 		bool isPtrType(const clang::Expr* expr) const;
 
+		//! Write a single character literal, with proper escaping
+		void writeCharacter(char c);
+
 	private:
 		//! AST Context holds additional separate information about the AST
 		clang::ASTContext* pContext;
