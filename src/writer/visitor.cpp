@@ -1152,6 +1152,16 @@ namespace NanyFromC
 					return type->getTypeClassName();
 			}
 		}
+		else if (llvm::isa<clang::ElaboratedType>(type))
+		{
+			const auto* elabType = static_cast<const clang::ElaboratedType*>(type);
+			return convertType(elabType->getNamedType());
+		}
+		else if (llvm::isa<clang::RecordType>(type))
+		{
+			const auto* recType = static_cast<const clang::RecordType*>(type);
+			return recType->getDecl()->getDefinition()->getNameAsString();
+		}
 		return type->getTypeClassName();
 	}
 
