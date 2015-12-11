@@ -41,6 +41,8 @@ namespace NanyFromC
 			return visitEnumDecl(static_cast<const clang::EnumDecl*>(decl));
 		case clang::Decl::EnumConstant:
 			return visitEnumConstantDecl(static_cast<const clang::EnumConstantDecl*>(decl));
+		case clang::Decl::LinkageSpec:
+			return visitLinkageSpecDecl(static_cast<const clang::LinkageSpecDecl*>(decl));
 		default:
 			pLog.error() << "Node \"" << decl->getDeclKindName() << "\" is not yet implemented !";
 			return true;
@@ -433,16 +435,22 @@ namespace NanyFromC
 			<< decl->getDefinition()->getNameAsString()
 			<< '\n' << pIndent << "{\n";
 		++pIndent;
-		visitDeclContext(decl);
+		bool ok = visitDeclContext(decl);
 		--pIndent;
 		std::cout << pIndent << "}\n";
-		return true;
+		return ok;
 	}
 
 	bool NanyConverterVisitor::visitCXXRecordDecl(const clang::CXXRecordDecl* decl)
 	{
 		pLog.debug() << "CXXRecordDecl";
 		return visitRecordDecl(decl);
+	}
+
+	bool NanyConverterVisitor::visitLinkageSpecDecl(const clang::LinkageSpecDecl* decl)
+	{
+		pLog.debug() << "LinkageSpecDecl";
+		return visitDeclContext(clang::LinkageSpecDecl::castToDeclContext(decl));
 	}
 
 

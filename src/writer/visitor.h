@@ -19,7 +19,7 @@ namespace NanyFromC
 			, pIndent(0u)
 			, pStatementStart(false)
 		{
-			pLog.verbosityLevel = Yuni::Logs::Verbosity::Error::level;
+			//pLog.verbosityLevel = Yuni::Logs::Verbosity::Error::level;
 		}
 
 		//! Entry point for a whole compilation unit
@@ -61,6 +61,8 @@ namespace NanyFromC
 		bool visitRecordDecl(const clang::RecordDecl* decl);
 		//! C++ struct / class
 		bool visitCXXRecordDecl(const clang::CXXRecordDecl* decl);
+		//! extern "C" declarations
+		bool visitLinkageSpecDecl(const clang::LinkageSpecDecl* decl);
 
 		//! Default behaviour for statements (and exprs)
 		bool visitStmt(const clang::Stmt* stmt);
