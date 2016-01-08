@@ -352,6 +352,13 @@ namespace NanyFromC
 	bool NanyConverterVisitor::visitTypedefDecl(const clang::TypedefDecl* decl)
 	{
 		pLog.debug() << "TypedefDecl";
+		if (not decl)
+			return true;
+
+		// Ignore typedefs where the name is the same on each side
+		// Handles the following C idiom : `typedef struct A A;`
+		if (convertType(decl->getUnderlyingType()) == decl->getNameAsString())
+			return true;
 
 		std::cout << pIndent;
 		std::cout << "typedef " << decl->getNameAsString() << " : ";
@@ -385,13 +392,35 @@ namespace NanyFromC
 		return true;
 	}
 
+	bool NanyConverterVisitor::visitTagDecl(const clang::TagDecl* decl, Yuni::String& name)
+	{
+		// Trick to manage C-style typedef'd structs: `typedef struct A { ...} A;`
+		// Ignore useless typedef after a record or enum decl
+		clang::Decl* nextDecl = const_cast<clang::TagDecl*>(decl)->getNextDeclInContext();
+		if (nextDecl && llvm::isa<clang::TypedefDecl>(nextDecl)
+			&& convertType(dynamic_cast<const clang::TypedefDecl*>(nextDecl)->getUnderlyingType()) == convertType(decl->getTypeForDecl()->getCanonicalTypeInternal()))
+		{
+			// If the decl is an anonymous declaration, use the typedef name instead
+			if (name.empty())
+				name = dynamic_cast<const clang::TypedefDecl*>(nextDecl)->getNameAsString();
+			// Remove the useless typedef from the parent context
+			auto* parentContext = const_cast<clang::DeclContext*>(decl->getDeclContext());
+			if (parentContext)
+				parentContext->removeDecl(nextDecl);
+		}
+		return true;
+	}
+
 	bool NanyConverterVisitor::visitEnumDecl(const clang::EnumDecl* decl)
 	{
 		pLog.debug() << "EnumDecl";
 		if (not decl)
 			return true;
 
-		std::cout << pIndent << "enum " << decl->getNameAsString() << '\n';
+		Yuni::String enumName = decl->getNameAsString();
+		visitTagDecl(decl, enumName);
+
+		std::cout << pIndent << "enum " << enumName << '\n';
 		std::cout << pIndent << "{\n";
 		++pIndent;
 		visitDeclContext(decl);
@@ -424,15 +453,16 @@ namespace NanyFromC
 		if (not decl->isThisDeclarationADefinition())
 			return true;
 
+		Yuni::String className = decl->getDefinition()->getNameAsString();
+		visitTagDecl(decl, className);
+
 		if (not llvm::isa<clang::CXXRecordDecl>(decl))
 			std::cout << pIndent << "[[C]]\n";
 		std::cout << pIndent;
 		if (decl->isInAnonymousNamespace())
 			std::cout << "private ";
-		else
-			std::cout << "public ";
 		std::cout << "class "
-			<< decl->getDefinition()->getNameAsString()
+			<< className
 			<< '\n' << pIndent << "{\n";
 		++pIndent;
 		bool ok = visitDeclContext(decl);
@@ -1132,7 +1162,14 @@ namespace NanyFromC
 
 	Yuni::String NanyConverterVisitor::convertType(const clang::Type* type) const
 	{
-		if (type->isScalarType())
+		if (not type)
+			return "";
+
+		/*if (llvm::isa<clang::BuiltinType>(type))
+		{
+			return convertType(static_cast<const clang::BuiltinType*>(type)->desugar());
+		}
+		else */if (type->isScalarType())
 		{
 			switch (type->getScalarTypeKind())
 			{
@@ -1168,7 +1205,7 @@ namespace NanyFromC
 		else if (llvm::isa<clang::RecordType>(type))
 		{
 			const auto* recType = static_cast<const clang::RecordType*>(type);
-			return recType->getDecl()->getDefinition()->getNameAsString();
+			return recType->getDecl()->/*getDefinition()->*/getNameAsString();
 		}
 		return type->getTypeClassName();
 	}
