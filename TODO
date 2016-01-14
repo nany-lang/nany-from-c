@@ -1,3 +1,5 @@
+* convertType : unroll typedef references
+* handle anonymous struct with inline vardecl: struct { ... } myVar;
+* Handle switch / case fallthroughs
 * new array creation is broken
-* Filter out nodes that come from an included file
-* Manage Builtin types (clang::BuiltinType) instead of using isScalar()
+* Filter out nodes that come from included files

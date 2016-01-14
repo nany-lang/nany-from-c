@@ -61,7 +61,6 @@ namespace NanyFromC
 			break;
 		case clang::Stmt::NullStmtClass:
 			return visitNullStmt(static_cast<const clang::NullStmt*>(stmt));
-			break;
 		case clang::Stmt::DeclStmtClass:
 			return visitDeclStmt(static_cast<const clang::DeclStmt*>(stmt));
 		case clang::Stmt::CompoundStmtClass:
@@ -76,6 +75,8 @@ namespace NanyFromC
 			return visitDoStmt(static_cast<const clang::DoStmt*>(stmt));
 		case clang::Stmt::ForStmtClass:
 			return visitForStmt(static_cast<const clang::ForStmt*>(stmt));
+		case clang::Stmt::SwitchStmtClass:
+			return visitSwitchStmt(static_cast<const clang::SwitchStmt*>(stmt));
 		case clang::Stmt::BreakStmtClass:
 			return visitBreakStmt(static_cast<const clang::BreakStmt*>(stmt));
 		case clang::Stmt::ContinueStmtClass:
@@ -112,6 +113,8 @@ namespace NanyFromC
 			return visitExplicitCastExpr(static_cast<const clang::ExplicitCastExpr*>(stmt));
 		case clang::Stmt::ParenExprClass:
 			return visitParenExpr(static_cast<const clang::ParenExpr*>(stmt));
+		case clang::Stmt::UnaryExprOrTypeTraitExprClass:
+			return visitUnaryExprOrTypeTraitExpr(static_cast<const clang::UnaryExprOrTypeTraitExpr*>(stmt));
 		case clang::Stmt::CXXBoolLiteralExprClass:
 			return visitCXXBoolLiteralExpr(static_cast<const clang::CXXBoolLiteralExpr*>(stmt));
 		case clang::Stmt::CharacterLiteralClass:
@@ -259,7 +262,7 @@ namespace NanyFromC
 		else
 		{
 			// Typing
-			if (not decl->isNoReturn())
+			if (not decl->isNoReturn() && not decl->getReturnType()->isVoidType())
 			{
 				std::cout << " : ";
 				visitType(decl->getReturnType());
@@ -398,11 +401,11 @@ namespace NanyFromC
 		// Ignore useless typedef after a record or enum decl
 		clang::Decl* nextDecl = const_cast<clang::TagDecl*>(decl)->getNextDeclInContext();
 		if (nextDecl && llvm::isa<clang::TypedefDecl>(nextDecl)
-			&& convertType(dynamic_cast<const clang::TypedefDecl*>(nextDecl)->getUnderlyingType()) == convertType(decl->getTypeForDecl()->getCanonicalTypeInternal()))
+			&& convertType(static_cast<const clang::TypedefDecl*>(nextDecl)->getUnderlyingType()) == convertType(decl->getTypeForDecl()->getCanonicalTypeInternal()))
 		{
 			// If the decl is an anonymous declaration, use the typedef name instead
 			if (name.empty())
-				name = dynamic_cast<const clang::TypedefDecl*>(nextDecl)->getNameAsString();
+				name = static_cast<const clang::TypedefDecl*>(nextDecl)->getNameAsString();
 			// Remove the useless typedef from the parent context
 			auto* parentContext = const_cast<clang::DeclContext*>(decl->getDeclContext());
 			if (parentContext)
@@ -680,6 +683,57 @@ namespace NanyFromC
 		pStatementStart = false;
 		return true;
 	}
+
+	bool NanyConverterVisitor::visitSwitchStmt(const clang::SwitchStmt* stmt)
+	{
+		pLog.debug() << "SwitchStmt";
+		if (not stmt)
+			return true;
+
+		std::cout << pIndent << "switch ";
+		visitStmt(stmt->getCond());
+		std::cout << " on\n";
+		std::cout << pIndent << "{\n";
+		++pIndent;
+
+		for (const auto* caseStmt = stmt->getSwitchCaseList(); caseStmt; caseStmt = caseStmt->getNextSwitchCase())
+		{
+			if (llvm::isa<clang::CaseStmt>(caseStmt))
+			{
+				std::cout << pIndent << "case ";
+				visitStmt(static_cast<const clang::CaseStmt*>(caseStmt)->getLHS());
+				std::cout << ":\n"
+						  << pIndent << "{\n";
+			}
+			else
+			{
+				std::cout << pIndent << "default:\n"
+						  << pIndent << "{\n";
+			}
+			++pIndent;
+			visitStmt(caseStmt->getSubStmt());
+			--pIndent;
+			std::cout << pIndent << "}\n";
+		}
+
+		--pIndent;
+		std::cout << pIndent << "}\n";
+		return true;
+	}
+/*
+	bool NanyConverterVisitor::visitCaseStmt(const clang::CaseStmt* stmt)
+	{
+		pLog.debug() << "CaseStmt";
+		if (not stmt)
+			return true;
+
+		std::cout << pIndent << "case ";
+		visitStmt(stmt);
+		std::cout << ":\n";
+		std::cout << "{}\n";
+		return true;
+	}*/
+
 
 	bool NanyConverterVisitor::visitBreakStmt(const clang::BreakStmt* stmt)
 	{
@@ -1041,6 +1095,35 @@ namespace NanyFromC
 		return true;
 	}
 
+	bool NanyConverterVisitor::visitUnaryExprOrTypeTraitExpr(const clang::UnaryExprOrTypeTraitExpr* expr)
+	{
+		pLog.debug() << "UnaryExprOrTypeTraitExpr";
+		switch (expr->getKind())
+		{
+			case clang::UETT_SizeOf:
+				if (expr->isArgumentType())
+					visitType(expr->getArgumentType());
+				else
+				{
+					std::cout << "#(";
+					visitStmt(expr->getArgumentExpr());
+					std::cout << ')';
+				}
+				std::cout << ".size";
+				break;
+			case clang::UETT_AlignOf:
+				pLog.error() << "Unmanaged C/C++ - alignof command !";
+				break;
+			case clang::UETT_VecStep:
+				pLog.error() << "Unmanaged OpenCL - VecStep command !";
+				break;
+			default:
+				pLog.error() << "Unmanaged type trait !";
+				break;
+		}
+		return true;
+	}
+
 
 	bool NanyConverterVisitor::visitCXXBoolLiteralExpr(const clang::CXXBoolLiteralExpr* expr)
 	{
@@ -1165,11 +1248,7 @@ namespace NanyFromC
 		if (not type)
 			return "";
 
-		/*if (llvm::isa<clang::BuiltinType>(type))
-		{
-			return convertType(static_cast<const clang::BuiltinType*>(type)->desugar());
-		}
-		else */if (type->isScalarType())
+		if (type->isScalarType())
 		{
 			switch (type->getScalarTypeKind())
 			{
@@ -1195,6 +1274,17 @@ namespace NanyFromC
 				default:
 					std::cerr << "Unmanaged Scalar kind for type \"" << type->getTypeClassName() << "\"" << std::endl;
 					return type->getTypeClassName();
+			}
+		}
+		else if (llvm::isa<clang::BuiltinType>(type))
+		{
+			const auto* builtin = type->getAs<const clang::BuiltinType>();
+			switch (builtin->getKind())
+			{
+				case clang::BuiltinType::Void:
+					return "void";
+				default:
+					return builtin->getTypeClassName();
 			}
 		}
 		else if (llvm::isa<clang::ElaboratedType>(type))

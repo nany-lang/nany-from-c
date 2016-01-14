@@ -76,6 +76,7 @@ namespace NanyFromC
 		bool visitWhileStmt(const clang::WhileStmt* stmt);
 		bool visitDoStmt(const clang::DoStmt* stmt);
 		bool visitForStmt(const clang::ForStmt* stmt);
+		bool visitSwitchStmt(const clang::SwitchStmt* stmt);
 		bool visitBreakStmt(const clang::BreakStmt* stmt);
 		bool visitContinueStmt(const clang::ContinueStmt* stmt);
 		bool visitCompoundStmt(const clang::CompoundStmt* stmt);
@@ -112,6 +113,8 @@ namespace NanyFromC
 		bool visitExplicitCastExpr(const clang::ExplicitCastExpr* expr);
 		//! Parentheses
 		bool visitParenExpr(const clang::ParenExpr* expr);
+		//! sizeof / alignof
+		bool visitUnaryExprOrTypeTraitExpr(const clang::UnaryExprOrTypeTraitExpr* expr);
 
 		bool visitCXXBoolLiteralExpr(const clang::CXXBoolLiteralExpr* expr);
 		bool visitCharacterLiteral(const clang::CharacterLiteral* stmt);

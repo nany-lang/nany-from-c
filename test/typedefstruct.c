@@ -4,6 +4,11 @@ typedef enum
 	value2
 } e_name;
 
+struct
+{
+	int a;
+} s_noname;
+
 typedef struct
 {
 	int field1;
