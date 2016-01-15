@@ -1,5 +1,5 @@
-* convertType : unroll typedef references
 * handle anonymous struct with inline vardecl: struct { ... } myVar;
-* Handle switch / case fallthroughs
+* Handle multiple factored cases in switch..case
 * new array creation is broken
+* Handle switch..case fallthroughs
 * Filter out nodes that come from included files

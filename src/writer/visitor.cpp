@@ -77,6 +77,8 @@ namespace NanyFromC
 			return visitForStmt(static_cast<const clang::ForStmt*>(stmt));
 		case clang::Stmt::SwitchStmtClass:
 			return visitSwitchStmt(static_cast<const clang::SwitchStmt*>(stmt));
+		case clang::Stmt::CaseStmtClass:
+			return visitCaseStmt(static_cast<const clang::CaseStmt*>(stmt));
 		case clang::Stmt::BreakStmtClass:
 			return visitBreakStmt(static_cast<const clang::BreakStmt*>(stmt));
 		case clang::Stmt::ContinueStmtClass:
@@ -700,16 +702,18 @@ namespace NanyFromC
 		{
 			if (llvm::isa<clang::CaseStmt>(caseStmt))
 			{
-				std::cout << pIndent << "case ";
-				visitStmt(static_cast<const clang::CaseStmt*>(caseStmt)->getLHS());
-				std::cout << ":\n"
-						  << pIndent << "{\n";
+				visitCaseStmt(static_cast<const clang::CaseStmt*>(caseStmt));
 			}
-			else
+			else // DefaultStmt
 			{
-				std::cout << pIndent << "default:\n"
-						  << pIndent << "{\n";
-			}
+				std::cout << pIndent << "default:\n";
+			}/*
+			while (llvm::isa<clang::CaseStmt>(caseStmt->getSubStmt()))
+			{
+				caseStmt = caseStmt->getSubStmt();
+				visitStmt(caseStmt);
+			}*/
+			std::cout << pIndent << "{\n";
 			++pIndent;
 			visitStmt(caseStmt->getSubStmt());
 			--pIndent;
@@ -720,7 +724,7 @@ namespace NanyFromC
 		std::cout << pIndent << "}\n";
 		return true;
 	}
-/*
+
 	bool NanyConverterVisitor::visitCaseStmt(const clang::CaseStmt* stmt)
 	{
 		pLog.debug() << "CaseStmt";
@@ -728,11 +732,11 @@ namespace NanyFromC
 			return true;
 
 		std::cout << pIndent << "case ";
-		visitStmt(stmt);
+		visitStmt(stmt->getLHS());
 		std::cout << ":\n";
-		std::cout << "{}\n";
+
 		return true;
-	}*/
+	}
 
 
 	bool NanyConverterVisitor::visitBreakStmt(const clang::BreakStmt* stmt)
@@ -1287,15 +1291,20 @@ namespace NanyFromC
 					return builtin->getTypeClassName();
 			}
 		}
+		else if (llvm::isa<clang::TypedefType>(type))
+		{
+			const auto* typedefName = type->getAs<const clang::TypedefType>();
+			return convertType(typedefName->getDecl()->getUnderlyingType());
+		}
 		else if (llvm::isa<clang::ElaboratedType>(type))
 		{
-			const auto* elabType = static_cast<const clang::ElaboratedType*>(type);
+			const auto* elabType = type->getAs<const clang::ElaboratedType>();
 			return convertType(elabType->getNamedType());
 		}
 		else if (llvm::isa<clang::RecordType>(type))
 		{
-			const auto* recType = static_cast<const clang::RecordType*>(type);
-			return recType->getDecl()->/*getDefinition()->*/getNameAsString();
+			const auto* recType = type->getAs<const clang::RecordType>();
+			return recType->getDecl()->getNameAsString();
 		}
 		return type->getTypeClassName();
 	}
