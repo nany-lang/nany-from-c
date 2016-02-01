@@ -7,7 +7,7 @@ typedef enum
 struct
 {
 	int a;
-} s_noname;
+} myVar;
 
 typedef struct
 {

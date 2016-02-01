@@ -402,13 +402,31 @@ namespace NanyFromC
 		// Trick to manage C-style typedef'd structs: `typedef struct A { ...} A;`
 		// Ignore useless typedef after a record or enum decl
 		clang::Decl* nextDecl = const_cast<clang::TagDecl*>(decl)->getNextDeclInContext();
-		if (nextDecl && llvm::isa<clang::TypedefDecl>(nextDecl)
+		if (not nextDecl)
+			return true;
+
+		if (llvm::isa<clang::TypedefDecl>(nextDecl)
 			&& convertType(static_cast<const clang::TypedefDecl*>(nextDecl)->getUnderlyingType()) == convertType(decl->getTypeForDecl()->getCanonicalTypeInternal()))
 		{
 			// If the decl is an anonymous declaration, use the typedef name instead
 			if (name.empty())
 				name = static_cast<const clang::TypedefDecl*>(nextDecl)->getNameAsString();
 			// Remove the useless typedef from the parent context
+			auto* parentContext = const_cast<clang::DeclContext*>(decl->getDeclContext());
+			if (parentContext)
+				parentContext->removeDecl(nextDecl);
+		}
+		// Similar trick to manage anonymous struct inline var declaration : `struct { ...} myVar;`
+		// Reverse the declaration to declare the type inline after it
+		else if (llvm::isa<clang::VarDecl>(nextDecl)
+			&& convertType(static_cast<const clang::VarDecl*>(nextDecl)->getType()) == convertType(decl->getTypeForDecl()->getCanonicalTypeInternal()))
+		{
+			const clang::VarDecl* varDecl = static_cast<const clang::VarDecl*>(nextDecl);
+			std::cout << pIndent;
+			if (varDecl->isStaticDataMember())
+				std::cout << "class ";
+			std::cout << (varDecl->isConstexpr() || varDecl->getType().isConstant(*pContext) ? "const " : "var ") << varDecl->getNameAsString()	<< " = new ";
+			// Remove the useless vardecl from the parent context
 			auto* parentContext = const_cast<clang::DeclContext*>(decl->getDeclContext());
 			if (parentContext)
 				parentContext->removeDecl(nextDecl);
