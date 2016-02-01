@@ -190,10 +190,7 @@ namespace NanyFromC
 		if (!decl->isLocalVarDecl())
 			return true;
 
-		std::cout << pIndent;
-		if (decl->isStaticDataMember())
-			std::cout << "class ";
-		std::cout << (decl->isConstexpr() || decl->getType().isConstant(*pContext) ? "const " : "var ") << decl->getNameAsString();
+		std::cout << pIndent << (decl->isConstexpr() || decl->getType().isConstant(*pContext) ? "const " : "var ") << decl->getNameAsString();
 		if (not decl->hasInit())
 		{
 			// If we do not have an initializer, we need a type
@@ -224,9 +221,22 @@ namespace NanyFromC
 		pLog.debug() << "FieldDecl";
 		if (not decl)
 			return true;
-		std::cout << pIndent
-			<< (decl->getType().isConstant(*pContext) ? "const " : "var ")
-			<< decl->getNameAsString() << ";\n";
+		std::cout << pIndent;
+		if (not decl->isCXXInstanceMember())
+			std::cout << "class ";
+		std::cout << (decl->getType().isConstant(*pContext) ? "const " : "var ") << decl->getNameAsString();
+		if (not decl->hasInClassInitializer())
+		{
+			// If we do not have an initializer, we need a type
+			std::cout << " : ";
+			visitType(decl->getType());
+		}
+		else
+		{
+			std::cout << " = ";
+			visitStmt(decl->getInClassInitializer());
+		}
+		std::cout << ";\n";
 		return true;
 	}
 
@@ -422,15 +432,27 @@ namespace NanyFromC
 			&& convertType(static_cast<const clang::VarDecl*>(nextDecl)->getType()) == convertType(decl->getTypeForDecl()->getCanonicalTypeInternal()))
 		{
 			const clang::VarDecl* varDecl = static_cast<const clang::VarDecl*>(nextDecl);
-			std::cout << pIndent;
-			if (varDecl->isStaticDataMember())
-				std::cout << "class ";
-			std::cout << (varDecl->isConstexpr() || varDecl->getType().isConstant(*pContext) ? "const " : "var ") << varDecl->getNameAsString()	<< " = new ";
+			std::cout << pIndent << (varDecl->isConstexpr() || varDecl->getType().isConstant(*pContext) ? "const " : "var ") << varDecl->getNameAsString()	<< " = new\n";
 			// Remove the useless vardecl from the parent context
 			auto* parentContext = const_cast<clang::DeclContext*>(decl->getDeclContext());
 			if (parentContext)
 				parentContext->removeDecl(nextDecl);
 		}
+		// And again the same trick but this time for member declarations inside classes
+		else if (llvm::isa<clang::FieldDecl>(nextDecl)
+			&& convertType(static_cast<const clang::FieldDecl*>(nextDecl)->getType()) == convertType(decl->getTypeForDecl()->getCanonicalTypeInternal()))
+		{
+			const clang::FieldDecl* fieldDecl = static_cast<const clang::FieldDecl*>(nextDecl);
+			std::cout << pIndent;
+			if (not fieldDecl->isCXXInstanceMember())
+				std::cout << "class ";
+			std::cout << (fieldDecl->getType().isConstant(*pContext) ? "const " : "var ") << fieldDecl->getNameAsString()	<< " = new\n";
+			// Remove the useless fielddecl from the parent context
+			auto* parentContext = const_cast<clang::DeclContext*>(decl->getDeclContext());
+			if (parentContext)
+				parentContext->removeDecl(nextDecl);
+		}
+
 		return true;
 	}
 
