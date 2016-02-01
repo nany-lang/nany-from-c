@@ -43,5 +43,15 @@
 		"directory": "/home/nitrous/code/nany-from-c/test",
 		"command": "/usr/bin/gcc -Wall -Wextra -W -std=gnu14 -I. -DNDEBUG -DPOSIX -c -o typedefstruct.o typedefstruct.c",
 		"file": "typedefstruct.c"
+	},
+	{
+		"directory": "/home/nitrous/code/nany-from-c/test",
+		"command": "/usr/bin/gcc -Wall -Wextra -W -std=c11 -I. -DNDEBUG -DPOSIX -c -o nany.o nany.c",
+		"file": "nany.c"
+	},
+	{
+		"directory": "/home/nitrous/code/nany-from-c/test",
+		"command": "/usr/bin/g++ -Wall -Wextra -W -std=c++11 -I. -DNDEBUG -DPOSIX -c -o nany.o nany.cpp",
+		"file": "nany.cpp"
 	}
 ]
