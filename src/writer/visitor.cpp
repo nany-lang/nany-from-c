@@ -79,6 +79,8 @@ namespace NanyFromC
 			return visitSwitchStmt(static_cast<const clang::SwitchStmt*>(stmt));
 		case clang::Stmt::CaseStmtClass:
 			return visitCaseStmt(static_cast<const clang::CaseStmt*>(stmt));
+		case clang::Stmt::DefaultStmtClass:
+			return visitDefaultStmt(static_cast<const clang::DefaultStmt*>(stmt));
 		case clang::Stmt::BreakStmtClass:
 			return visitBreakStmt(static_cast<const clang::BreakStmt*>(stmt));
 		case clang::Stmt::ContinueStmtClass:
@@ -191,13 +193,11 @@ namespace NanyFromC
 			return true;
 
 		std::cout << pIndent << (decl->isConstexpr() || decl->getType().isConstant(*pContext) ? "const " : "var ") << decl->getNameAsString();
-		if (not decl->hasInit())
-		{
-			// If we do not have an initializer, we need a type
-			std::cout << " : ";
-			visitType(decl->getType());
-		}
-		else
+		// Always write the type
+		std::cout << " : ";
+		visitType(decl->getType());
+		// If we have an initializer, write it
+		if (decl->hasInit())
 		{
 			std::cout << " = ";
 			visitStmt(decl->getInit());
@@ -225,13 +225,12 @@ namespace NanyFromC
 		if (not decl->isCXXInstanceMember())
 			std::cout << "class ";
 		std::cout << (decl->getType().isConstant(*pContext) ? "const " : "var ") << decl->getNameAsString();
-		if (not decl->hasInClassInitializer())
-		{
-			// If we do not have an initializer, we need a type
-			std::cout << " : ";
-			visitType(decl->getType());
-		}
-		else
+
+		// Always write the type
+		std::cout << " : ";
+		visitType(decl->getType());
+		// If we have an initializer, write it
+		if (decl->hasInClassInitializer())
 		{
 			std::cout << " = ";
 			visitStmt(decl->getInClassInitializer());
@@ -738,21 +737,23 @@ namespace NanyFromC
 		std::cout << pIndent << "{\n";
 		++pIndent;
 
-		for (const auto* caseStmt = stmt->getSwitchCaseList(); caseStmt; caseStmt = caseStmt->getNextSwitchCase())
+		// stmt->getSwitchCaseList() returns a badly-ordered list of SwitchCases so avoid it
+		for (const auto* childStmt : (const_cast<clang::SwitchStmt*>(stmt))->getBody()->children())
+		//for (const auto* caseStmt = stmt->getSwitchCaseList(); caseStmt; caseStmt = caseStmt->getNextSwitchCase())
 		{
-			if (llvm::isa<clang::CaseStmt>(caseStmt))
+			if (not childStmt || not llvm::isa<clang::SwitchCase>(childStmt))
+				continue;
+			const clang::SwitchCase* caseStmt = static_cast<const clang::SwitchCase*>(childStmt);
+			const clang::SwitchCase* typedCaseStmt = caseStmt;
+			while (typedCaseStmt)
 			{
-				visitCaseStmt(static_cast<const clang::CaseStmt*>(caseStmt));
+				caseStmt = typedCaseStmt;
+				visitStmt(typedCaseStmt);
+				typedCaseStmt = llvm::isa<clang::SwitchCase>(typedCaseStmt->getSubStmt())
+					? static_cast<const clang::SwitchCase*>(typedCaseStmt->getSubStmt())
+					: nullptr;
 			}
-			else // DefaultStmt
-			{
-				std::cout << pIndent << "default:\n";
-			}/*
-			while (llvm::isa<clang::CaseStmt>(caseStmt->getSubStmt()))
-			{
-				caseStmt = caseStmt->getSubStmt();
-				visitStmt(caseStmt);
-			}*/
+
 			std::cout << pIndent << "{\n";
 			++pIndent;
 			visitStmt(caseStmt->getSubStmt());
@@ -778,6 +779,15 @@ namespace NanyFromC
 		return true;
 	}
 
+	bool NanyConverterVisitor::visitDefaultStmt(const clang::DefaultStmt* stmt)
+	{
+		pLog.debug() << "DefaultStmt";
+		if (not stmt)
+			return true;
+
+		std::cout << pIndent << "default:\n";
+		return true;
+	}
 
 	bool NanyConverterVisitor::visitBreakStmt(const clang::BreakStmt* stmt)
 	{

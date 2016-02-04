@@ -1,4 +1,3 @@
-* Handle multiple factored cases in switch..case
-* new array creation is broken
+! new array creation is broken (see `new.cpp`)
 * Detect and handle switch..case fallthroughs
 * Filter out nodes that come from included files
