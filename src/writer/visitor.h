@@ -1,7 +1,9 @@
 #pragma once
 #include <yuni/yuni.h>
+#include <yuni/core/dictionary.h>
 #include <yuni/core/logs.h>
 #include <yuni/core/string.h>
+#include <yuni/io/filename-manipulation.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/FrontendActions.h>
 #include <clang/AST/RecursiveASTVisitor.h>
@@ -20,6 +22,11 @@ namespace NanyFromC
 			, pStatementStart(false)
 		{
 			pLog.verbosityLevel = Yuni::Logs::Verbosity::Error::level;
+			// Get the compilation unit's main file
+			clang::FileID mainFileID = pContext->getSourceManager().getMainFileID();
+			const clang::FileEntry* fileEntry = pContext->getSourceManager().getFileEntryForID(mainFileID);
+			// Store its path to detect other files from the project (this is naive but better than nothing)
+			Yuni::IO::ExtractAbsoluteFilePath(pMainFilePath, fileEntry->getName());
 		}
 
 		//! Entry point for a whole compilation unit
@@ -141,6 +148,41 @@ namespace NanyFromC
 		//! Write a single character literal, with proper escaping
 		void writeCharacter(char c);
 
+		bool definedInProject(const clang::Decl* decl) const
+		{
+			return isProjectFile(pContext->getSourceManager().getFileID(decl->getLocation()));
+		}
+
+		bool definedInProject(const clang::Stmt* stmt) const
+		{
+			return isProjectFile(pContext->getSourceManager().getFileID(stmt->getLocStart()));
+		}
+
+		void addProjectFile(clang::FileID id)
+		{
+			unsigned hash = id.getHashValue();
+			if (pProjectFiles.end() == pProjectFiles.find(hash))
+				pProjectFiles[hash] = true;
+		}
+
+		bool isProjectFile(clang::FileID id) const
+		{
+			// Search the cache first
+			const auto it = pProjectFiles.find(id.getHashValue());
+			if (pProjectFiles.end() != it)
+				return it->second;
+
+			// Check that the file's absolute path starts with the main file's absolute path
+			const clang::FileEntry* fileEntry = pContext->getSourceManager().getFileEntryForID(id);
+			if (not fileEntry)
+				return false;
+			Yuni::String path;
+			Yuni::IO::ExtractAbsoluteFilePath(path, fileEntry->getName());
+			bool isInProjectDirectory = path.startsWith(pMainFilePath);
+			pProjectFiles[id.getHashValue()] = isInProjectDirectory;
+			return isInProjectDirectory;
+		}
+
 	private:
 		//! AST Context holds additional separate information about the AST
 		clang::ASTContext* pContext;
@@ -150,6 +192,10 @@ namespace NanyFromC
 		Indenter pIndent;
 		//! Use this to mark when a future simple expression is actually used as a statement
 		bool pStatementStart;
+		//! Store the absolute path to the main file for this compilation unit
+		Yuni::String pMainFilePath;
+		//! Cache file Ids with a boolean to distinguish files from the project (true) from library includes (false)
+		mutable Yuni::Dictionary<unsigned, bool>::Hash pProjectFiles;
 
 	}; // class NanyConverterVisitor
 

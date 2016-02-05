@@ -12,6 +12,9 @@ namespace NanyFromC
 		if (not decl)
 			return true;
 
+		if (not definedInProject(decl))
+			return true;
+
 		switch (decl->getKind())
 		{
 		case clang::Decl::Var:
@@ -53,6 +56,9 @@ namespace NanyFromC
 	bool NanyConverterVisitor::visitRealStmtType(const clang::Stmt* stmt)
 	{
 		if (not stmt)
+			return true;
+
+		if (not definedInProject(stmt))
 			return true;
 
 		switch (stmt->getStmtClass())
@@ -882,6 +888,10 @@ namespace NanyFromC
 		{
 			std::cout << ' ';
 			visitStmt(expr->getConstructExpr());
+		}
+		if (expr->isArray())
+		{
+			std::cout << '[' << expr->getArraySize() << ']';
 		}
 		return true;
 	}

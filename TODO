@@ -1,3 +1,2 @@
-! new array creation is broken (see `new.cpp`)
+! Operator new is broken / incomplete (see `new.cpp`)
 * Detect and handle switch..case fallthroughs
-* Filter out nodes that come from included files
