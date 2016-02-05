@@ -883,15 +883,13 @@ namespace NanyFromC
 		pLog.debug() << "CXXNewExpr";
 		if (not expr)
 			return true;
-		std::cout << "new";
-		if (expr->getConstructExpr())
-		{
-			std::cout << ' ';
-			visitStmt(expr->getConstructExpr());
-		}
+		std::cout << "new ";
+		visitType(expr->getAllocatedType());
 		if (expr->isArray())
 		{
-			std::cout << '[' << expr->getArraySize() << ']';
+			std::cout << '[';
+			visitStmt(expr->getArraySize());
+			std::cout << ']';
 		}
 		return true;
 	}
@@ -1129,6 +1127,7 @@ namespace NanyFromC
 			break;
 		// In the default case, use compiler intrinsics to cast
 		default:
+			std::cout << "new ";
 			visitType(expr->getType());
 			std::cout << "(";
 			visitStmt(expr->getSubExpr());

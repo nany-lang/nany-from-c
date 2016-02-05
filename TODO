@@ -1,2 +1,1 @@
-! Operator new is broken / incomplete (see `new.cpp`)
 * Detect and handle switch..case fallthroughs
