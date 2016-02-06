@@ -11,6 +11,11 @@
 	},
 	{
 		"directory": "/home/nitrous/code/nany-from-c/test",
+		"command": "/usr/bin/g++ -Wall -Wextra -W -std=c11 -I. -DNDEBUG -DPOSIX -c -o literals.o literals.c",
+		"file": "literals.c"
+	},
+	{
+		"directory": "/home/nitrous/code/nany-from-c/test",
 		"command": "/usr/bin/gcc -Wall -Wextra -W -std=c11 -I. -DNDEBUG -DPOSIX -c -o empty_main.o empty_main.c",
 		"file": "empty_main.c"
 	},
@@ -41,7 +46,17 @@
 	},
 	{
 		"directory": "/home/nitrous/code/nany-from-c/test",
-		"command": "/usr/bin/gcc -Wall -Wextra -W -std=gnu14 -I. -DNDEBUG -DPOSIX -c -o typedefstruct.o typedefstruct.c",
+		"command": "/usr/bin/gcc -Wall -Wextra -W -std=c11 -I. -DNDEBUG -DPOSIX -c -o switch.o switch.c",
+		"file": "switch.c"
+	},
+	{
+		"directory": "/home/nitrous/code/nany-from-c/test",
+		"command": "/usr/bin/gcc -Wall -Wextra -W -std=c11 -I. -DNDEBUG -DPOSIX -c -o operators.o operators.c",
+		"file": "operators.c"
+	},
+	{
+		"directory": "/home/nitrous/code/nany-from-c/test",
+		"command": "/usr/bin/gcc -Wall -Wextra -W -std=c11 -I. -DNDEBUG -DPOSIX -c -o typedefstruct.o typedefstruct.c",
 		"file": "typedefstruct.c"
 	},
 	{

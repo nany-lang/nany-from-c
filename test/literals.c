@@ -1,3 +1,4 @@
+#include <stdlib.h>
 
 int main()
 {
@@ -9,5 +10,6 @@ int main()
 	char c = '\t';
 	char* str = "Hello";
 	char* escapes = "\t\r\n\a\b\f\v\\\'\"\?\0";
+	escapes = NULL;
 	return 0;
 }

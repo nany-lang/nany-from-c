@@ -1365,6 +1365,16 @@ namespace NanyFromC
 			const auto* recType = type->getAs<const clang::RecordType>();
 			return recType->getDecl()->getNameAsString();
 		}
+		else if (llvm::isa<clang::ParenType>(type))
+		{
+			const auto* parenType = type->getAs<const clang::ParenType>();
+			return convertType(parenType->getInnerType());
+		}
+		else if (llvm::isa<clang::ArrayType>(type))
+		{
+			const auto* arrayType = static_cast<const clang::ArrayType*>(type);
+			return Yuni::String("std.c.ptr<") << convertType(arrayType->getElementType()) << '>';
+		}
 		return type->getTypeClassName();
 	}
 
