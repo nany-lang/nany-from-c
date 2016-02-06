@@ -58,8 +58,8 @@ namespace NanyFromC
 		if (not stmt)
 			return true;
 
-		if (not definedInProject(stmt))
-			return true;
+//		if (not definedInProject(stmt))
+//			return true;
 
 		switch (stmt->getStmtClass())
 		{
@@ -992,7 +992,7 @@ namespace NanyFromC
 
 	bool NanyConverterVisitor::visitBinaryOperator(const clang::BinaryOperator* expr)
 	{
-		pLog.debug() << "UnaryOperator";
+		pLog.debug() << "BinaryOperator";
 		if (not expr)
 			return true;
 

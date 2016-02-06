@@ -1,3 +1,2 @@
-* NULL macro is not handled properly ( (void*)0 cast )
 * Properly unroll `FunctionProto` types
 * Detect and handle switch..case fallthroughs
