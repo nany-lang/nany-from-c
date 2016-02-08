@@ -58,9 +58,6 @@ namespace NanyFromC
 		if (not stmt)
 			return true;
 
-//		if (not definedInProject(stmt))
-//			return true;
-
 		switch (stmt->getStmtClass())
 		{
 		case clang::Stmt::NoStmtClass:
