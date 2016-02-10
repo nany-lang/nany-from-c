@@ -11,7 +11,7 @@
 	},
 	{
 		"directory": "/home/nitrous/code/nany-from-c/test",
-		"command": "/usr/bin/g++ -Wall -Wextra -W -std=c11 -I. -DNDEBUG -DPOSIX -c -o literals.o literals.c",
+		"command": "/usr/bin/gcc -Wall -Wextra -W -std=c11 -I. -DNDEBUG -DPOSIX -c -o literals.o literals.c",
 		"file": "literals.c"
 	},
 	{
@@ -61,12 +61,22 @@
 	},
 	{
 		"directory": "/home/nitrous/code/nany-from-c/test",
-		"command": "/usr/bin/gcc -Wall -Wextra -W -std=c11 -I. -DNDEBUG -DPOSIX -c -o nany.o nany.c",
-		"file": "nany.c"
+		"command": "/usr/bin/g++ -Wall -Wextra -W -std=gnu++14 -I. -DNDEBUG -DPOSIX -c -o funcptr.o funcptr.cpp",
+		"file": "funcptr.cpp"
 	},
 	{
 		"directory": "/home/nitrous/code/nany-from-c/test",
-		"command": "/usr/bin/g++ -Wall -Wextra -W -std=c++11 -I. -DNDEBUG -DPOSIX -c -o nany.o nany.cpp",
-		"file": "nany.cpp"
+		"command": "/usr/bin/g++ -Wall -Wextra -W -std=gnu++14 -I. -DNDEBUG -DPOSIX -c -o cast.o cast.cpp",
+		"file": "cast.cpp"
+	},
+	{
+		"directory": "/home/nitrous/code/nany-from-c/test",
+		"command": "/usr/bin/gcc -Wall -Wextra -W -std=c11 -I. -DNDEBUG -DPOSIX -c -o nullcast.o nullcast.c",
+		"file": "nullcast.c"
+	},
+	{
+		"directory": "/home/nitrous/code/nany-from-c/test",
+		"command": "/usr/bin/gcc -Wall -Wextra -W -std=c11 -I. -DNDEBUG -DPOSIX -c -o nany.o nany.c",
+		"file": "nany.c"
 	}
 ]

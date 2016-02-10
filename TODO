@@ -1,3 +1,5 @@
 * Segv (see typedefstruct.c)
 * Properly handle `MemberPointer` types (see funcptr.c)
+* Simplify `new std.c.ptr<GLubyte>(null)` into null (see nullcast.c)
+  (This works fine when compiling in CPP, but not in C)
 * Detect and handle switch..case fallthroughs
