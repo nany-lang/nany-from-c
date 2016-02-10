@@ -967,11 +967,17 @@ namespace NanyFromC
 			// operator *
 			case clang::UO_Deref:
 				// special case : write immediately
-				std::cout << "std.c.ptrValue(";
+				std::cout << "std.c.deref(";
 				visitStmt(expr->getSubExpr());
 				std::cout << ')';
 				break;
-			// UO_AddrOf (&)
+			// operator &
+			case clang::UO_AddrOf:
+				// special case : write immediately
+				std::cout << "std.c.addressOf(";
+				visitStmt(expr->getSubExpr());
+				std::cout << ')';
+				break;
 			default:
 				pLog.error() << "Unary operator is not yet implemented : \'" << clang::UnaryOperator::getOpcodeStr(expr->getOpcode()).data() << '\'';
 				break;
