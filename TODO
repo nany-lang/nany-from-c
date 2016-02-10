@@ -1,2 +1,3 @@
-* Properly unroll `FunctionProto` types
+* Segv (see typedefstruct.c)
+* Properly handle `MemberPointer` types (see funcptr.c)
 * Detect and handle switch..case fallthroughs

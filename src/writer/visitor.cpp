@@ -1308,70 +1308,101 @@ namespace NanyFromC
 		if (not type)
 			return "";
 
-		if (type->isScalarType())
+		if (llvm::isa<clang::BuiltinType>(type))
 		{
-			switch (type->getScalarTypeKind())
-			{
-				case clang::Type::STK_Bool:
-					return "std.c.bool";
-				case clang::Type::STK_Integral:
-					return Yuni::String(type->isSignedIntegerType()	? "std.c.int" : "std.c.uint") << typeSize(type);
-				case clang::Type::STK_Floating:
-					return Yuni::String("std.c.float") << typeSize(type);
-				case clang::Type::STK_CPointer:
-				{
-					const auto& subType = type->getPointeeType();
-					// int8 is char, so consider int8* as a string
-					if (subType->isSignedIntegerType() and 8 == typeSize(subType))
-						return "std.c.cstr";
-					return Yuni::String("std.c.ptr<") << convertType(type->getPointeeType()) << '>';
-				}
-				case clang::Type::STK_BlockPointer:
-				case clang::Type::STK_ObjCObjectPointer:
-				case clang::Type::STK_MemberPointer:
-				case clang::Type::STK_IntegralComplex:
-				case clang::Type::STK_FloatingComplex:
-				default:
-					std::cerr << "Unmanaged Scalar kind for type \"" << type->getTypeClassName() << "\"" << std::endl;
-					return type->getTypeClassName();
-			}
-		}
-		else if (llvm::isa<clang::BuiltinType>(type))
-		{
+			pLog.debug() << "Builtin";
 			const auto* builtin = type->getAs<const clang::BuiltinType>();
 			switch (builtin->getKind())
 			{
 				case clang::BuiltinType::Void:
 					return "void";
 				default:
-					return builtin->getTypeClassName();
+					break;
 			}
+
+			switch (type->getScalarTypeKind())
+			{
+				case clang::Type::STK_Bool:
+					pLog.debug() << "Bool";
+					return "std.c.bool";
+				case clang::Type::STK_Integral:
+					pLog.debug() << "Integral";
+					return Yuni::String(type->isSignedIntegerType()	? "std.c.int" : "std.c.uint") << typeSize(type);
+				case clang::Type::STK_Floating:
+					pLog.debug() << "Floating";
+					return Yuni::String("std.c.float") << typeSize(type);
+				default:
+					pLog.error() << "Unmanaged Scalar kind for Builtin type \"" << type->getTypeClassName() << "\"";
+					return type->getTypeClassName();
+			}
+		}
+		else if (llvm::isa<clang::PointerType>(type))
+		{
+			pLog.debug() << "Pointer";
+			const auto& subType = type->getPointeeType();
+			// int8 is char, so consider int8* as a string
+			if (subType->isSignedIntegerType() and 8 == typeSize(subType))
+				return "std.c.cstr";
+			// Special management for function pointers : do not write them as C pointers
+			if (llvm::isa<clang::FunctionProtoType>(type->getPointeeType()) ||
+			   (llvm::isa<clang::ParenType>(type->getPointeeType())
+				&& llvm::isa<clang::FunctionProtoType>(type->getPointeeType()->getAs<const clang::ParenType>()->getInnerType())))
+				return convertType(type->getPointeeType());
+			return Yuni::String("std.c.ptr<") << convertType(type->getPointeeType()) << '>';
+		}
+		else if (llvm::isa<clang::MemberPointerType>(type))
+		{
+			pLog.debug() << "MemberPointer";
+			return "std.c.pointer";
 		}
 		else if (llvm::isa<clang::TypedefType>(type))
 		{
+			pLog.debug() << "Typedef";
 			const auto* typedefName = type->getAs<const clang::TypedefType>();
-			return convertType(typedefName->getDecl()->getUnderlyingType());
+			return typedefName->getDecl()->getNameAsString();
 		}
 		else if (llvm::isa<clang::ElaboratedType>(type))
 		{
+			pLog.debug() << "Elaborated";
 			const auto* elabType = type->getAs<const clang::ElaboratedType>();
 			return convertType(elabType->getNamedType());
 		}
 		else if (llvm::isa<clang::RecordType>(type))
 		{
+			pLog.debug() << "Record";
 			const auto* recType = type->getAs<const clang::RecordType>();
 			return recType->getDecl()->getNameAsString();
 		}
 		else if (llvm::isa<clang::ParenType>(type))
 		{
+			pLog.debug() << "Paren";
 			const auto* parenType = type->getAs<const clang::ParenType>();
 			return convertType(parenType->getInnerType());
 		}
 		else if (llvm::isa<clang::ArrayType>(type))
 		{
+			pLog.debug() << "Array";
 			const auto* arrayType = static_cast<const clang::ArrayType*>(type);
 			return Yuni::String("std.c.ptr<") << convertType(arrayType->getElementType()) << '>';
 		}
+		else if (llvm::isa<clang::FunctionProtoType>(type))
+		{
+			pLog.debug() << "FunctionProto";
+			const auto* funcPtrType = static_cast<const clang::FunctionProtoType*>(type);
+			Yuni::String result('(');
+			bool first = true;
+			for (const auto paramType : funcPtrType->param_types())
+			{
+				if (first)
+					first = false;
+				else
+					result << ", ";
+				result << convertType(paramType);
+			}
+			result << ") -> " << convertType(funcPtrType->getReturnType());
+			return result;
+		}
+		pLog.debug() << "Default";
 		return type->getTypeClassName();
 	}
 
