@@ -264,7 +264,9 @@ namespace NanyFromC
 			}
 			std::cout << ")";
 		}
+
 		if (llvm::isa<clang::CompoundStmt>(decl->getBody()) &&
+			(not static_cast<clang::CompoundStmt*>(decl->getBody())->body_empty()) &&
 			llvm::isa<clang::ReturnStmt>(static_cast<clang::CompoundStmt*>(decl->getBody())->body_begin()[0]))
 		{
 			// -> notation for inline return
