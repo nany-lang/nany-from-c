@@ -1,5 +1,5 @@
-! Crash in glew.c
-+ Properly handle `MemberPointer` types (see funcptr.c)
+* Handle FunctionNoProto type (see funcptr.c)
++ Properly handle `MemberPointer` types (see funcptr.cpp)
 + Simplify `new std.c.ptr<GLubyte>(null)` into null (see nullcast.c)
   (This works fine when compiling in CPP, but not in C)
 + Detect and handle switch..case fallthroughs

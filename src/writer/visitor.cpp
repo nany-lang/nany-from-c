@@ -862,7 +862,12 @@ namespace NanyFromC
 		if (isStmt)
 			std::cout << pIndent;
 		if (expr->getCallee() != nullptr)
-			std::cout << expr->getCalleeDecl()->getAsFunction()->getNameAsString() << '(';
+		{
+			//if ()
+			//std::cout << expr->getCalleeDecl()->getAsFunction()->getNameAsString() << '(';
+			visitStmt(expr->getCallee());
+			std::cout << '(';
+		}
 		uint i = 0;
 		for (const auto& arg : expr->arguments())
 		{

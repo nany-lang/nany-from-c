@@ -22,7 +22,7 @@ namespace NanyFromC
 			, pStatementStart(false)
 		{
 			// Filter out debug and warning messages
-			//pLog.verbosityLevel = Yuni::Logs::Verbosity::Error::level;
+			pLog.verbosityLevel = Yuni::Logs::Verbosity::Error::level;
 			// Get the compilation unit's main file
 			clang::FileID mainFileID = pContext->getSourceManager().getMainFileID();
 			const clang::FileEntry* fileEntry = pContext->getSourceManager().getFileEntryForID(mainFileID);

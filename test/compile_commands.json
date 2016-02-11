@@ -66,6 +66,11 @@
 	},
 	{
 		"directory": "/home/nitrous/code/nany-from-c/test",
+		"command": "/usr/bin/gcc -Wall -Wextra -W -std=c11 -I. -DNDEBUG -DPOSIX -c -o funcptr.o funcptr.c",
+		"file": "funcptr.c"
+	},
+	{
+		"directory": "/home/nitrous/code/nany-from-c/test",
 		"command": "/usr/bin/g++ -Wall -Wextra -W -std=gnu++14 -I. -DNDEBUG -DPOSIX -c -o cast.o cast.cpp",
 		"file": "cast.cpp"
 	},
