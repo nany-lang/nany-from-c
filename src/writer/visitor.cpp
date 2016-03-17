@@ -94,6 +94,8 @@ namespace NanyFromC
 			return visitMemberExpr(static_cast<const clang::MemberExpr*>(stmt));
 		case clang::Stmt::CallExprClass:
 			return visitCallExpr(static_cast<const clang::CallExpr*>(stmt));
+		case clang::Stmt::CXXMemberCallExprClass:
+			return visitCXXMemberCallExpr(static_cast<const clang::CXXMemberCallExpr*>(stmt));
 		case clang::Stmt::CXXNewExprClass:
 			return visitCXXNewExpr(static_cast<const clang::CXXNewExpr*>(stmt));
 		case clang::Stmt::CXXDeleteExprClass:
@@ -122,6 +124,8 @@ namespace NanyFromC
 			return visitParenExpr(static_cast<const clang::ParenExpr*>(stmt));
 		case clang::Stmt::UnaryExprOrTypeTraitExprClass:
 			return visitUnaryExprOrTypeTraitExpr(static_cast<const clang::UnaryExprOrTypeTraitExpr*>(stmt));
+		case clang::Stmt::InitListExprClass:
+			return visitInitListExpr(static_cast<const clang::InitListExpr*>(stmt));
 		case clang::Stmt::CXXBoolLiteralExprClass:
 			return visitCXXBoolLiteralExpr(static_cast<const clang::CXXBoolLiteralExpr*>(stmt));
 		case clang::Stmt::CharacterLiteralClass:
@@ -863,10 +867,14 @@ namespace NanyFromC
 			std::cout << pIndent;
 		if (expr->getCallee() != nullptr)
 		{
-			//if ()
-			//std::cout << expr->getCalleeDecl()->getAsFunction()->getNameAsString() << '(';
-			visitStmt(expr->getCallee());
-			std::cout << '(';
+			const auto* asFunc = expr->getCalleeDecl()->getAsFunction();
+			if (asFunc)
+				std::cout << asFunc->getNameAsString() << '(';
+			else
+			{
+				visitStmt(expr->getCallee());
+				std::cout << '(';
+			}
 		}
 		uint i = 0;
 		for (const auto& arg : expr->arguments())
@@ -879,6 +887,13 @@ namespace NanyFromC
 			std::cout << ");\n";
 		else
 			std::cout << ")";
+		return true;
+	}
+
+	bool NanyConverterVisitor::visitCXXMemberCallExpr(const clang::CXXMemberCallExpr* expr)
+	{
+		pLog.debug() << "CXXMemberCallExpr";
+		//visitCallExpr(expr);
 		return true;
 	}
 
@@ -1027,7 +1042,8 @@ namespace NanyFromC
 			break;
 		case clang::BO_PtrMemD:
 		case clang::BO_PtrMemI:
-			pLog.error() << "Binary operator \"" << expr->getOpcodeStr().data() << "\" is not yet implemented";
+			op = ".";
+			//pLog.error() << "Binary operator \"" << expr->getOpcodeStr().data() << "\" is not yet implemented";
 			return true;
 		default:
 			// All other binary operators are the same in Nany and can be copied directly
@@ -1197,6 +1213,25 @@ namespace NanyFromC
 		return true;
 	}
 
+	bool NanyConverterVisitor::visitInitListExpr(const clang::InitListExpr* expr)
+	{
+		pLog.debug() << "InitListExpr";
+		std::cout << "[\n";
+		++pIndent;
+		bool first = true;
+		for (const auto& child : const_cast<clang::InitListExpr*>(expr)->children())
+		{
+			if (not first)
+				std::cout << ",\n";
+			else
+				first = false;
+			std::cout << pIndent;
+			visitStmt(child);
+		}
+		--pIndent;
+		std::cout << '\n' << pIndent << "]";
+		return true;
+	}
 
 	bool NanyConverterVisitor::visitCXXBoolLiteralExpr(const clang::CXXBoolLiteralExpr* expr)
 	{
@@ -1358,8 +1393,10 @@ namespace NanyFromC
 				return "std.c.cstr";
 			// Special management for function pointers : do not write them as C pointers
 			if (llvm::isa<clang::FunctionProtoType>(type->getPointeeType()) ||
-			   (llvm::isa<clang::ParenType>(type->getPointeeType())
-				&& llvm::isa<clang::FunctionProtoType>(type->getPointeeType()->getAs<const clang::ParenType>()->getInnerType())))
+				llvm::isa<clang::FunctionNoProtoType>(type->getPointeeType()) ||
+				(llvm::isa<clang::ParenType>(type->getPointeeType()) &&
+					(llvm::isa<clang::FunctionProtoType>(type->getPointeeType()->getAs<const clang::ParenType>()->getInnerType()) ||
+					llvm::isa<clang::FunctionNoProtoType>(type->getPointeeType()->getAs<const clang::ParenType>()->getInnerType()))))
 				return convertType(type->getPointeeType());
 			return Yuni::String("std.c.ptr<") << convertType(type->getPointeeType()) << '>';
 		}
@@ -1414,6 +1451,10 @@ namespace NanyFromC
 			}
 			result << ") -> " << convertType(funcPtrType->getReturnType());
 			return result;
+		}
+		else if (llvm::isa<clang::FunctionNoProtoType>(type))
+		{
+			return "() -> void";
 		}
 		pLog.debug() << "Default";
 		return type->getTypeClassName();

@@ -97,6 +97,8 @@ namespace NanyFromC
 		bool visitMemberExpr(const clang::MemberExpr* expr);
 		//! Function call
 		bool visitCallExpr(const clang::CallExpr* expr);
+		//! Object method call
+		bool visitCXXMemberCallExpr(const clang::CXXMemberCallExpr* expr);
 		//! Call to `new`
 		bool visitCXXNewExpr(const clang::CXXNewExpr* expr);
 		//! Call to `delete`
@@ -125,6 +127,8 @@ namespace NanyFromC
 		bool visitParenExpr(const clang::ParenExpr* expr);
 		//! sizeof / alignof
 		bool visitUnaryExprOrTypeTraitExpr(const clang::UnaryExprOrTypeTraitExpr* expr);
+		//! Initializer list
+		bool visitInitListExpr(const clang::InitListExpr* expr);
 
 		bool visitCXXBoolLiteralExpr(const clang::CXXBoolLiteralExpr* expr);
 		bool visitCharacterLiteral(const clang::CharacterLiteral* stmt);
