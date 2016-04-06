@@ -18,6 +18,16 @@ namespace NanyFromC
 		typedef std::vector<Yuni::String> JobList;
 
 	public:
+		enum Verbosity
+		{
+			vQuiet = 0,
+			vError = 1,
+			vWarning = 2,
+			vInfo = 3,
+			vDebug = 4,
+		};
+
+	public:
 		MessageCallback onFail;
 		MessageCallback onSuccess;
 
@@ -26,12 +36,16 @@ namespace NanyFromC
 
 		uint runAllJobs();
 
+		void setVerbosity(const AnyString& verbosityStr);
+
 	private:
 		void queueJobWL(const AnyString& filePath);
+		void printMessage(const AnyString& message, Verbosity level);
 
 	private:
 		Yuni::Mutex pMutex;
 		JobList pJobs;
+		Verbosity pVerbosity = vWarning;
 
 	}; // class Converter
 

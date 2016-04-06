@@ -2,9 +2,9 @@
 #include <yuni/job/queue/service.h>
 #include <yuni/thread/utility.h>
 #include <vector>
+#include <iostream>
 #include "converter.h"
 #include "parser/parser.h"
-//#include "writer/writer.h"
 
 
 namespace NanyFromC
@@ -49,10 +49,34 @@ namespace NanyFromC
 
 		queueservice.wait(Yuni::qseIdle);
 		pJobs.clear();
+
+		if (nbErrors > 0 && pVerbosity >= vError)
+			std::cerr << "Conversion failed on " << nbErrors << " files." << std::endl;
+
 		return nbErrors;
 	}
 
 
+	void Converter::setVerbosity(const AnyString& verbosityStr)
+	{
+		if (verbosityStr == "quiet")
+			pVerbosity = vQuiet;
+		else if (verbosityStr == "error")
+			pVerbosity = vError;
+		else if (verbosityStr == "warning")
+			pVerbosity = vWarning;
+		else if (verbosityStr == "info")
+			pVerbosity = vInfo;
+		else if (verbosityStr == "debug")
+			pVerbosity = vDebug;
+	}
+
+	void Converter::printMessage(const AnyString& message, Verbosity level)
+	{
+		assert(level > vQuiet && "Quiet verbosity makes no sesnse for a message");
+		if (pVerbosity >= level)
+			std::cerr << message << std::endl;
+	}
 
 
 } // namespace NanyFromC

@@ -1,5 +1,6 @@
 * "CXXMemberCallExpr" is not properly implemented (see funcptr.cpp).
 * CallExpr with function pointers is sometimes converted with a lambda, which is weird (see glew.c)
++ Handle verbosity properly on all messages
 + Simplify `new std.c.ptr<GLubyte>(null)` into null (see nullcast.c)
   (This works fine when compiling in C++, but not in C)
 + Detect and handle switch..case fallthroughs
