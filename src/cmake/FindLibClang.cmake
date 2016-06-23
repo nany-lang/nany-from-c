@@ -2,6 +2,8 @@ find_path(LibClang_INCLUDE_DIR clang-c/Index.h
     HINTS ${LIBCLANG_INCLUDE_PATH}
     PATHS
     # LLVM Debian/Ubuntu nightly packages: http://llvm.org/apt/
+    /usr/lib/llvm-3.8/include
+    /usr/lib/llvm-3.7/include
     /usr/lib/llvm-3.6/include
     /usr/lib/llvm-3.5/include
     /usr/lib/llvm-3.4/include
@@ -9,6 +11,8 @@ find_path(LibClang_INCLUDE_DIR clang-c/Index.h
     /usr/lib/llvm-3.2/include
     /usr/lib/llvm-3.1/include
     # LLVM MacPorts
+    /opt/local/libexec/llvm-3.8/include
+    /opt/local/libexec/llvm-3.7/include
     /opt/local/libexec/llvm-3.6/include
     /opt/local/libexec/llvm-3.5/include
     /opt/local/libexec/llvm-3.4/include
@@ -16,6 +20,8 @@ find_path(LibClang_INCLUDE_DIR clang-c/Index.h
     /opt/local/libexec/llvm-3.2/include
     /opt/local/libexec/llvm-3.1/include
     # LLVM Homebrew
+    /usr/local/Cellar/llvm/3.8/include
+    /usr/local/Cellar/llvm/3.7/include
     /usr/local/Cellar/llvm/3.6/include
     /usr/local/Cellar/llvm/3.5/include
     /usr/local/Cellar/llvm/3.4/include
@@ -28,6 +34,8 @@ find_library(LibClang_LIBRARY NAMES clang
     HINTS ${LIBCLANG_LIBRARY_PATH}
     PATHS
     # LLVM Debian/Ubuntu nightly packages: http://llvm.org/apt/
+    /usr/lib/llvm-3.8/lib/
+    /usr/lib/llvm-3.7/lib/
     /usr/lib/llvm-3.6/lib/
     /usr/lib/llvm-3.5/lib/
     /usr/lib/llvm-3.4/lib/
@@ -35,6 +43,8 @@ find_library(LibClang_LIBRARY NAMES clang
     /usr/lib/llvm-3.2/lib/
     /usr/lib/llvm-3.1/lib/
     # LLVM MacPorts
+    /opt/local/libexec/llvm-3.8/lib
+    /opt/local/libexec/llvm-3.7/lib
     /opt/local/libexec/llvm-3.6/lib
     /opt/local/libexec/llvm-3.5/lib
     /opt/local/libexec/llvm-3.4/lib
@@ -42,6 +52,8 @@ find_library(LibClang_LIBRARY NAMES clang
     /opt/local/libexec/llvm-3.2/lib
     /opt/local/libexec/llvm-3.1/lib
     # LLVM Homebrew
+    /usr/local/Cellar/llvm/3.8/lib
+    /usr/local/Cellar/llvm/3.7/lib
     /usr/local/Cellar/llvm/3.6/lib
     /usr/local/Cellar/llvm/3.5/lib
     /usr/local/Cellar/llvm/3.4/lib
